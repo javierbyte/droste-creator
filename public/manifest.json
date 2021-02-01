@@ -1,0 +1,8 @@
+{
+  "short_name": "droste-generator",
+  "name": "create droste images with droste effect",
+  "start_url": ".",
+  "display": "standalone",
+  "theme_color": "#000000",
+  "background_color": "#ffffff"
+}
