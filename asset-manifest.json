@@ -1,8 +1,8 @@
 {
   "files": {
     "main.css": "/droste-creator/static/css/main.edc0218b.chunk.css",
-    "main.js": "/droste-creator/static/js/main.2994d87a.chunk.js",
-    "main.js.map": "/droste-creator/static/js/main.2994d87a.chunk.js.map",
+    "main.js": "/droste-creator/static/js/main.87492a6c.chunk.js",
+    "main.js.map": "/droste-creator/static/js/main.87492a6c.chunk.js.map",
     "runtime-main.js": "/droste-creator/static/js/runtime-main.8425d371.js",
     "runtime-main.js.map": "/droste-creator/static/js/runtime-main.8425d371.js.map",
     "static/js/2.37998878.chunk.js": "/droste-creator/static/js/2.37998878.chunk.js",
@@ -15,6 +15,6 @@
     "static/js/runtime-main.8425d371.js",
     "static/js/2.37998878.chunk.js",
     "static/css/main.edc0218b.chunk.css",
-    "static/js/main.2994d87a.chunk.js"
+    "static/js/main.87492a6c.chunk.js"
   ]
 }
