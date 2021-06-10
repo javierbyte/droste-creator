@@ -112,13 +112,7 @@ const EXAMPLES = {
     src: 'flor.jpg',
     ratio: 1,
     example: [0.852, 0.001, 1.1312, 0.6366, -0.073, 0.28, 0.148, 0.999],
-    deep: 32
-  },
-  'Chichen Itza': {
-    src: 'chichenitza.svg',
-    ratio: 1,
-    example: [0.12, 0.05, 1 - 0.12, 0.05, 0.1, 27 / 32, 0.9, 27 / 32],
-    deep: 8
+    deep: 40
   },
   'Tokyo 1': {
     src: 'tokyo1.jpg',
@@ -137,6 +131,18 @@ const EXAMPLES = {
     ratio: 3 / 4,
     example: [0.15, 0.2, 0.85, 0.2, 0.15, 0.9, 0.85, 0.9],
     deep: 32
+  },
+  Stars: {
+    src: 'stars.jpg',
+    ratio: 3 / 4,
+    example: [0.15, 0.2, 0.85, 0.2, 0.15, 0.9, 0.85, 0.9],
+    deep: 32
+  },
+  Dotomblurry: {
+    src: 'dotomblurry.jpg',
+    ratio: 3 / 4,
+    example: [0.15, 0.12, 0.85, 0.12, 0.15, 0.87, 0.85, 0.87],
+    deep: 32
   }
 };
 
@@ -148,6 +154,9 @@ function App() {
       ]
     ]
   );
+
+  // const [sourceImage, sourceImageSet] = useState(EXAMPLES['Dotomblurry']);
+
   const size = Math.min(
     window.innerHeight - 64,
     window.innerWidth / sourceImage.ratio
@@ -470,10 +479,10 @@ function App() {
 
     function animate() {
       if (window.GLOBAL_ANIMATION === 'OUT') {
-        progress += 0.012;
+        progress += 0.009;
         if (progress > 1) progress -= 1;
       } else if (window.GLOBAL_ANIMATION === 'IN') {
-        progress -= 0.012;
+        progress -= 0.009;
         if (progress < 0) progress += 1;
       }
 
@@ -483,8 +492,6 @@ function App() {
 
       const interpolatedCss = `matrix3d(${interpolatedValues.join(',')})`;
       animatableEl.style.transform = interpolatedCss;
-
-      console.log(window.GLOBAL_ANIMATION);
 
       if (window.GLOBAL_ANIMATION !== 'OFF') {
         window.requestAnimationFrame(animate);
@@ -516,7 +523,7 @@ function App() {
           <div className="main-animatable image-container -transformable">
             {imageTransformArray.map((transform, imageIdx) => (
               <img
-                key={imageIdx + sourceImage.src}
+                key={imageIdx}
                 alt=""
                 className="img -transformed -transformable"
                 style={{
@@ -524,7 +531,7 @@ function App() {
                   height,
                   transform: `matrix3d(${transform.join(',')})`
                 }}
-                src={sourceImage.src}
+                src={`/droste-creator/${sourceImage.src}`}
               />
             ))}
           </div>
@@ -535,12 +542,7 @@ function App() {
           position={points[0]}
           onDrag={(evt, data) => DRAW_MODE_FUNCTION[drawMode](data, 0)}
         >
-          <button
-            style={{ display: currentAnimation === 'OFF' ? 'block' : 'none' }}
-            className="point"
-          >
-            0
-          </button>
+          <button className="point">0</button>
         </Draggable>
 
         {drawMode !== 'handleDragLockAspect' && (
@@ -549,12 +551,7 @@ function App() {
             position={points[1]}
             onDrag={(evt, data) => DRAW_MODE_FUNCTION[drawMode](data, 1)}
           >
-            <button
-              style={{ display: currentAnimation === 'OFF' ? 'block' : 'none' }}
-              className="point"
-            >
-              1
-            </button>
+            <button className="point">1</button>
           </Draggable>
         )}
 
@@ -564,12 +561,7 @@ function App() {
             position={points[2]}
             onDrag={(evt, data) => DRAW_MODE_FUNCTION[drawMode](data, 2)}
           >
-            <button
-              style={{ display: currentAnimation === 'OFF' ? 'block' : 'none' }}
-              className="point"
-            >
-              2
-            </button>
+            <button className="point">2</button>
           </Draggable>
         )}
 
@@ -578,12 +570,7 @@ function App() {
           position={points[3]}
           onDrag={(evt, data) => DRAW_MODE_FUNCTION[drawMode](data, 3)}
         >
-          <button
-            style={{ display: currentAnimation === 'OFF' ? 'block' : 'none' }}
-            className="point"
-          >
-            3
-          </button>
+          <button className="point">3</button>
         </Draggable>
       </div>
 
