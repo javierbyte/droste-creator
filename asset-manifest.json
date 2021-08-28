@@ -1,20 +1,20 @@
 {
   "files": {
     "main.css": "/droste-creator/static/css/main.edc0218b.chunk.css",
-    "main.js": "/droste-creator/static/js/main.08a2c807.chunk.js",
-    "main.js.map": "/droste-creator/static/js/main.08a2c807.chunk.js.map",
+    "main.js": "/droste-creator/static/js/main.c711ac4d.chunk.js",
+    "main.js.map": "/droste-creator/static/js/main.c711ac4d.chunk.js.map",
     "runtime-main.js": "/droste-creator/static/js/runtime-main.f8756508.js",
     "runtime-main.js.map": "/droste-creator/static/js/runtime-main.f8756508.js.map",
-    "static/js/2.4cd71e70.chunk.js": "/droste-creator/static/js/2.4cd71e70.chunk.js",
-    "static/js/2.4cd71e70.chunk.js.map": "/droste-creator/static/js/2.4cd71e70.chunk.js.map",
+    "static/js/2.94d730ba.chunk.js": "/droste-creator/static/js/2.94d730ba.chunk.js",
+    "static/js/2.94d730ba.chunk.js.map": "/droste-creator/static/js/2.94d730ba.chunk.js.map",
     "index.html": "/droste-creator/index.html",
     "static/css/main.edc0218b.chunk.css.map": "/droste-creator/static/css/main.edc0218b.chunk.css.map",
-    "static/js/2.4cd71e70.chunk.js.LICENSE.txt": "/droste-creator/static/js/2.4cd71e70.chunk.js.LICENSE.txt"
+    "static/js/2.94d730ba.chunk.js.LICENSE.txt": "/droste-creator/static/js/2.94d730ba.chunk.js.LICENSE.txt"
   },
   "entrypoints": [
     "static/js/runtime-main.f8756508.js",
-    "static/js/2.4cd71e70.chunk.js",
+    "static/js/2.94d730ba.chunk.js",
     "static/css/main.edc0218b.chunk.css",
-    "static/js/main.08a2c807.chunk.js"
+    "static/js/main.c711ac4d.chunk.js"
   ]
 }
