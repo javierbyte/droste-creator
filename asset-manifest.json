@@ -1,20 +1,20 @@
 {
   "files": {
-    "main.css": "/droste-creator/static/css/main.edc0218b.chunk.css",
-    "main.js": "/droste-creator/static/js/main.c711ac4d.chunk.js",
-    "main.js.map": "/droste-creator/static/js/main.c711ac4d.chunk.js.map",
-    "runtime-main.js": "/droste-creator/static/js/runtime-main.f8756508.js",
-    "runtime-main.js.map": "/droste-creator/static/js/runtime-main.f8756508.js.map",
-    "static/js/2.94d730ba.chunk.js": "/droste-creator/static/js/2.94d730ba.chunk.js",
-    "static/js/2.94d730ba.chunk.js.map": "/droste-creator/static/js/2.94d730ba.chunk.js.map",
+    "main.css": "/droste-creator/static/css/main.0f50a3d9.chunk.css",
+    "main.js": "/droste-creator/static/js/main.c22f313f.chunk.js",
+    "main.js.map": "/droste-creator/static/js/main.c22f313f.chunk.js.map",
+    "runtime-main.js": "/droste-creator/static/js/runtime-main.12dd3d4c.js",
+    "runtime-main.js.map": "/droste-creator/static/js/runtime-main.12dd3d4c.js.map",
+    "static/js/2.24aedf62.chunk.js": "/droste-creator/static/js/2.24aedf62.chunk.js",
+    "static/js/2.24aedf62.chunk.js.map": "/droste-creator/static/js/2.24aedf62.chunk.js.map",
     "index.html": "/droste-creator/index.html",
-    "static/css/main.edc0218b.chunk.css.map": "/droste-creator/static/css/main.edc0218b.chunk.css.map",
-    "static/js/2.94d730ba.chunk.js.LICENSE.txt": "/droste-creator/static/js/2.94d730ba.chunk.js.LICENSE.txt"
+    "static/css/main.0f50a3d9.chunk.css.map": "/droste-creator/static/css/main.0f50a3d9.chunk.css.map",
+    "static/js/2.24aedf62.chunk.js.LICENSE.txt": "/droste-creator/static/js/2.24aedf62.chunk.js.LICENSE.txt"
   },
   "entrypoints": [
-    "static/js/runtime-main.f8756508.js",
-    "static/js/2.94d730ba.chunk.js",
-    "static/css/main.edc0218b.chunk.css",
-    "static/js/main.c711ac4d.chunk.js"
+    "static/js/runtime-main.12dd3d4c.js",
+    "static/js/2.24aedf62.chunk.js",
+    "static/css/main.0f50a3d9.chunk.css",
+    "static/js/main.c22f313f.chunk.js"
   ]
 }
