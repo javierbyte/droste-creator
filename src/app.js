@@ -107,39 +107,45 @@ function getCounterPoint(id) {
   if (id === 3) return 0;
 }
 
+function onNewPicture() {
+  console.info('>>');
+
+  document.querySelector('.jb-file-uploader').click();
+}
+
 const EXAMPLES = {
   Flor: {
-    src: 'flor.jpg',
+    src: '/droste-creator/flor.jpg',
     ratio: 1,
     example: [0.852, 0.001, 1.1312, 0.6366, -0.073, 0.28, 0.148, 0.999],
     deep: 40
   },
   'Tokyo 1': {
-    src: 'tokyo1.jpg',
+    src: '/droste-creator/tokyo1.jpg',
     ratio: 3 / 4,
     example: [0.15, 0.2, 0.85, 0.2, 0.15, 0.9, 0.85, 0.9],
     deep: 32
   },
   'Tokyo 2': {
-    src: 'tokyo2.jpg',
+    src: '/droste-creator/tokyo2.jpg',
     ratio: 3 / 4,
     example: [0.15, 0.2, 0.85, 0.2, 0.15, 0.9, 0.85, 0.9],
     deep: 32
   },
   'Tokyo 3': {
-    src: 'tokyo3.jpg',
+    src: '/droste-creator/tokyo3.jpg',
     ratio: 3 / 4,
     example: [0.15, 0.2, 0.85, 0.2, 0.15, 0.9, 0.85, 0.9],
     deep: 32
   },
   Stars: {
-    src: 'stars.jpg',
+    src: '/droste-creator/stars.jpg',
     ratio: 3 / 4,
     example: [0.15, 0.2, 0.85, 0.2, 0.15, 0.9, 0.85, 0.9],
     deep: 32
   },
   Dotomblurry: {
-    src: 'dotomblurry.jpg',
+    src: '/droste-creator/dotomblurry.jpg',
     ratio: 3 / 4,
     example: [0.15, 0.12, 0.85, 0.12, 0.15, 0.87, 0.85, 0.87],
     deep: 32
@@ -531,7 +537,7 @@ function App() {
                   height,
                   transform: `matrix3d(${transform.join(',')})`
                 }}
-                src={`/droste-creator/${sourceImage.src}`}
+                src={sourceImage.src}
               />
             ))}
           </div>
@@ -652,18 +658,16 @@ function App() {
 
         <div style={{ flex: 1 }} />
 
-        <div className="jb-file-uploader-container">
-          <Button>New Picture</Button>
+        <Button onClick={onNewPicture}>New Picture</Button>
 
-          <input
-            className="jb-file-uploader"
-            type="file"
-            onChange={onFileSelected}
-            multiple
-            accept="image/*"
-            aria-label="Drop an image here, or click to select"
-          />
-        </div>
+        <input
+          className="jb-file-uploader"
+          type="file"
+          onChange={onFileSelected}
+          multiple
+          accept="image/*"
+          aria-label="Drop an image here, or click to select"
+        />
 
         <Space w={1} />
 

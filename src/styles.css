@@ -157,6 +157,7 @@ hr {
 }
 
 .jb-file-uploader {
+  display: none;
   opacity: 0;
   position: absolute;
   top: 0;
