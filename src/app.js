@@ -1,6 +1,6 @@
 import { JBX, Button, Text, Space, A } from 'jbx';
 
-import React, { Fragment, useState, useRef, useEffect } from 'react';
+import { Fragment, useState, useRef, useEffect } from 'react';
 import Draggable from 'react-draggable';
 
 import transform2d from './lib/4point.js';
@@ -13,14 +13,14 @@ window.GLOBAL_ANIMATION = 'OFF';
 function polar2cartesian({ distance, angle }) {
   return {
     x: distance * Math.cos(angle),
-    y: distance * Math.sin(angle)
+    y: distance * Math.sin(angle),
   };
 }
 
 function cartesian2polar({ x, y }) {
   return {
     distance: Math.sqrt(Math.pow(x, 2) + Math.pow(y, 2)),
-    angle: Math.atan2(y, x)
+    angle: Math.atan2(y, x),
   };
 }
 
@@ -31,7 +31,7 @@ const SIDEBAR_WIDTH = 300;
 const DEFAULT_ANIMATIONS = {
   OFF: 'Off',
   IN: 'In',
-  OUT: 'Out'
+  OUT: 'Out',
 };
 
 const useClickOutside = (ref, callback) => {
@@ -115,41 +115,41 @@ function onNewPicture() {
 
 const EXAMPLES = {
   Flor: {
-    src: '/droste-creator/flor.jpg',
+    src: '/droste-creator/examples/flor.jpg',
     ratio: 1,
     example: [0.852, 0.001, 1.1312, 0.6366, -0.073, 0.28, 0.148, 0.999],
-    deep: 40
+    deep: 40,
   },
   'Tokyo 1': {
-    src: '/droste-creator/tokyo1.jpg',
+    src: '/droste-creator/examples/tokyo1.jpg',
     ratio: 3 / 4,
     example: [0.15, 0.2, 0.85, 0.2, 0.15, 0.9, 0.85, 0.9],
-    deep: 32
+    deep: 32,
   },
   'Tokyo 2': {
-    src: '/droste-creator/tokyo2.jpg',
+    src: '/droste-creator/examples/tokyo2.jpg',
     ratio: 3 / 4,
     example: [0.15, 0.2, 0.85, 0.2, 0.15, 0.9, 0.85, 0.9],
-    deep: 32
+    deep: 32,
   },
   'Tokyo 3': {
-    src: '/droste-creator/tokyo3.jpg',
+    src: '/droste-creator/examples/tokyo3.jpg',
     ratio: 3 / 4,
     example: [0.15, 0.2, 0.85, 0.2, 0.15, 0.9, 0.85, 0.9],
-    deep: 32
+    deep: 32,
   },
   Stars: {
-    src: '/droste-creator/stars.jpg',
+    src: '/droste-creator/examples/stars.jpg',
     ratio: 3 / 4,
     example: [0.15, 0.2, 0.85, 0.2, 0.15, 0.9, 0.85, 0.9],
-    deep: 32
+    deep: 32,
   },
   Dotomblurry: {
-    src: '/droste-creator/dotomblurry.jpg',
+    src: '/droste-creator/examples/dotomblurry.jpg',
     ratio: 3 / 4,
     example: [0.15, 0.12, 0.85, 0.12, 0.15, 0.87, 0.85, 0.87],
-    deep: 32
-  }
+    deep: 32,
+  },
 };
 
 function App() {
@@ -160,8 +160,6 @@ function App() {
       ]
     ]
   );
-
-  // const [sourceImage, sourceImageSet] = useState(EXAMPLES['Dotomblurry']);
 
   const size = Math.min(
     window.innerHeight - 64,
@@ -186,7 +184,7 @@ function App() {
     { x: width * sourceImage.example[0], y: height * sourceImage.example[1] },
     { x: width * sourceImage.example[2], y: height * sourceImage.example[3] },
     { x: width * sourceImage.example[4], y: height * sourceImage.example[5] },
-    { x: width * sourceImage.example[6], y: height * sourceImage.example[7] }
+    { x: width * sourceImage.example[6], y: height * sourceImage.example[7] },
   ]);
 
   useEffect(() => {
@@ -202,20 +200,20 @@ function App() {
     pointSet([
       {
         x: width * sourceImage.example[0],
-        y: height * sourceImage.example[1]
+        y: height * sourceImage.example[1],
       },
       {
         x: width * sourceImage.example[2],
-        y: height * sourceImage.example[3]
+        y: height * sourceImage.example[3],
       },
       {
         x: width * sourceImage.example[4],
-        y: height * sourceImage.example[5]
+        y: height * sourceImage.example[5],
       },
       {
         x: width * sourceImage.example[6],
-        y: height * sourceImage.example[7]
-      }
+        y: height * sourceImage.example[7],
+      },
     ]);
   }, [sourceImage]);
 
@@ -285,7 +283,7 @@ function App() {
         src: base64,
         ratio: imageData.originalWidth / imageData.originalHeight,
         example: [0.2, 0.2, 0.8, 0.2, 0.2, 0.8, 0.8, 0.8],
-        deep: 20
+        deep: 20,
       });
     };
     fr.readAsDataURL(file);
@@ -302,22 +300,22 @@ function App() {
 
       const axisPointPolar = cartesian2polar({
         x: newPoints[3].x - origin.x,
-        y: newPoints[3].y - origin.y
+        y: newPoints[3].y - origin.y,
       });
 
       const originalPoint1Polar = cartesian2polar({
         x: width,
-        y: 0
+        y: 0,
       });
 
       const originalPoint2Polar = cartesian2polar({
         x: 0,
-        y: height
+        y: height,
       });
 
       const originalPoint3Polar = cartesian2polar({
         x: width,
-        y: height
+        y: height,
       });
 
       const originalAxisDistance = Math.sqrt(width * width + height * height);
@@ -332,12 +330,12 @@ function App() {
         angle:
           axisPointPolar.angle +
           originalPoint1Polar.angle -
-          originalPoint3Polar.angle
+          originalPoint3Polar.angle,
       };
 
       newPoints[1] = {
         x: origin.x + polar2cartesian(point1PolarTransformed).x,
-        y: origin.y + polar2cartesian(point1PolarTransformed).y
+        y: origin.y + polar2cartesian(point1PolarTransformed).y,
       };
 
       const point2PolarTransformed = {
@@ -345,12 +343,12 @@ function App() {
         angle:
           axisPointPolar.angle +
           originalPoint2Polar.angle -
-          originalPoint3Polar.angle
+          originalPoint3Polar.angle,
       };
 
       newPoints[2] = {
         x: origin.x + polar2cartesian(point2PolarTransformed).x,
-        y: origin.y + polar2cartesian(point2PolarTransformed).y
+        y: origin.y + polar2cartesian(point2PolarTransformed).y,
       };
 
       return newPoints;
@@ -360,20 +358,20 @@ function App() {
   const DRAW_MODE_FUNCTION = {
     handleDrag,
     handleDragMirror,
-    handleDragLockAspect
+    handleDragLockAspect,
   };
 
   const cssTransform = transform2d(
     width,
     height,
-    points[0].x - width * 0,
-    points[0].y - height * 0,
-    points[1].x - width * 0,
-    points[1].y - height * 0,
-    points[2].x - width * 0,
-    points[2].y - height * 0,
-    points[3].x - width * 0,
-    points[3].y - height * 0
+    points[0].x,
+    points[0].y,
+    points[1].x,
+    points[1].y,
+    points[2].x,
+    points[2].y,
+    points[3].x,
+    points[3].y
   );
   const invertedTransformArray = invertMatrix(cssTransform).flat();
 
@@ -409,7 +407,7 @@ function App() {
       var2,
       var5,
       null6,
-      var8
+      var8,
     ] = sixteen;
 
     return [var0, var1, var2, var3, var4, var5, var6, var7, var8];
@@ -432,7 +430,7 @@ function App() {
       t[2],
       t[5],
       0,
-      t[8]
+      t[8],
     ];
   }
 
@@ -523,7 +521,7 @@ function App() {
           style={{
             height,
             width,
-            overflow: 'hidden'
+            overflow: 'hidden',
           }}
         >
           <div className="main-animatable image-container -transformable">
@@ -535,7 +533,7 @@ function App() {
                 style={{
                   width,
                   height,
-                  transform: `matrix3d(${transform.join(',')})`
+                  transform: `matrix3d(${transform.join(',')})`,
                 }}
                 src={sourceImage.src}
               />
@@ -588,7 +586,7 @@ function App() {
             options={{
               handleDrag: 'Free',
               handleDragMirror: 'Mirror',
-              handleDragLockAspect: 'Aspect Lock'
+              handleDragLockAspect: 'Aspect Lock',
             }}
             onChange={drawModeSet}
           />
@@ -598,7 +596,15 @@ function App() {
           <Dropdown
             label="Depth"
             value={drosteDeep}
-            options={{ 8: 8, 16: 16, 32: 32, 72: 72, 128: 128, 256: '256 ⚠️' }}
+            options={{
+              2: 2,
+              8: 8,
+              16: 16,
+              32: 32,
+              72: 72,
+              128: 128,
+              256: '256 ⚠️',
+            }}
             onChange={(val) => drosteDeepSet(Number(val))}
           />
         </div>
