@@ -1,4 +1,4 @@
-import { JBX, Button, Text, Space, A } from 'jbx';
+import { Button, Text, Space, A } from 'jbx';
 
 import { Fragment, useState, useRef, useEffect } from 'react';
 import Draggable from 'react-draggable';
@@ -6,9 +6,23 @@ import Draggable from 'react-draggable';
 import transform2d from './lib/4point.js';
 import invertMatrix from './lib/invertMatrix.js';
 
-import './styles.css';
+const rnd = window.fxrand || Math.random;
+function rndArr(arr) {
+  return arr.map((e) => {
+    let tmp = e + (rnd() * 0.2 - 0.1);
+    if (tmp < 0.5) {
+      return tmp / 2;
+    } else {
+      return (tmp + 1) / 2;
+    }
+  });
+}
 
-window.GLOBAL_ANIMATION = 'OFF';
+const SHOW_UI = true;
+const TOPNAV_HEIGHT = SHOW_UI ? 64 : 0;
+const SIDEBAR_WIDTH = 300;
+
+window.GLOBAL_ANIMATION = rnd() > 0.5 ? 'IN' : 'OUT';
 
 function polar2cartesian({ distance, angle }) {
   return {
@@ -25,8 +39,6 @@ function cartesian2polar({ x, y }) {
 }
 
 const nullTransformArray = [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1];
-
-const SIDEBAR_WIDTH = 300;
 
 const DEFAULT_ANIMATIONS = {
   OFF: 'Off',
@@ -114,56 +126,57 @@ function onNewPicture() {
 }
 
 const EXAMPLES = {
-  Flor: {
-    src: '/droste-creator/examples/flor.jpg',
-    ratio: 1,
-    example: [0.852, 0.001, 1.1312, 0.6366, -0.073, 0.28, 0.148, 0.999],
+  // Flor: {
+  //   src: '/examples/flor.jpg',
+  //   ratio: 1,
+  //   example: [0.852, 0.001, 1.1312, 0.6366, -0.073, 0.28, 0.148, 0.999],
+  //   deep: 40,
+  // },
+  'Tokyo 1': {
+    src: './examples/tokyo1.jpg',
+    ratio: 3 / 4,
+    example: rndArr([0.15, 0.2, 0.85, 0.2, 0.15, 0.9, 0.85, 0.9]),
     deep: 40,
   },
-  'Tokyo 1': {
-    src: '/droste-creator/examples/tokyo1.jpg',
-    ratio: 3 / 4,
-    example: [0.15, 0.2, 0.85, 0.2, 0.15, 0.9, 0.85, 0.9],
-    deep: 32,
-  },
   'Tokyo 2': {
-    src: '/droste-creator/examples/tokyo2.jpg',
+    src: './examples/tokyo2.jpg',
     ratio: 3 / 4,
-    example: [0.15, 0.2, 0.85, 0.2, 0.15, 0.9, 0.85, 0.9],
-    deep: 32,
+    example: rndArr([0.15, 0.2, 0.85, 0.2, 0.15, 0.9, 0.85, 0.9]),
+    deep: 40,
   },
   'Tokyo 3': {
-    src: '/droste-creator/examples/tokyo3.jpg',
+    src: './examples/tokyo3.jpg',
     ratio: 3 / 4,
-    example: [0.15, 0.2, 0.85, 0.2, 0.15, 0.9, 0.85, 0.9],
-    deep: 32,
+    example: rndArr([0.15, 0.2, 0.85, 0.2, 0.15, 0.9, 0.85, 0.9]),
+    deep: 40,
   },
   Stars: {
-    src: '/droste-creator/examples/stars.jpg',
+    src: './examples/stars.jpg',
     ratio: 3 / 4,
-    example: [0.15, 0.2, 0.85, 0.2, 0.15, 0.9, 0.85, 0.9],
-    deep: 32,
+    example: rndArr([0.15, 0.2, 0.85, 0.2, 0.15, 0.9, 0.85, 0.9]),
+    deep: 40,
   },
   Dotomblurry: {
-    src: '/droste-creator/examples/dotomblurry.jpg',
+    src: './examples/dotomblurry.jpg',
     ratio: 3 / 4,
-    example: [0.15, 0.12, 0.85, 0.12, 0.15, 0.87, 0.85, 0.87],
-    deep: 32,
+    example: rndArr([0.15, 0.12, 0.85, 0.12, 0.15, 0.87, 0.85, 0.87]),
+    deep: 40,
   },
 };
+const CHOOSEN_EXAMPLE = Math.floor(rnd() * Object.keys(EXAMPLES).length);
 
 function App() {
+  const [windowSize, windowSizeSet] = useState({
+    width: window.innerWidth,
+    height: window.innerHeight,
+  });
   const [sourceImage, sourceImageSet] = useState(
-    EXAMPLES[
-      Object.keys(EXAMPLES)[
-        Math.floor(Math.random() * Object.keys(EXAMPLES).length)
-      ]
-    ]
+    EXAMPLES[Object.keys(EXAMPLES)[CHOOSEN_EXAMPLE]]
   );
 
   const size = Math.min(
-    window.innerHeight - 64,
-    window.innerWidth / sourceImage.ratio
+    windowSize.height - TOPNAV_HEIGHT,
+    windowSize.width / sourceImage.ratio
   );
   const width = size * sourceImage.ratio;
   const height = size;
@@ -178,7 +191,9 @@ function App() {
 
   const finalShowSidebar = isSidebarAlwaysVisible ? true : showSidebar;
 
-  const [currentAnimation, currentAnimationSet] = useState('OFF');
+  const [currentAnimation, currentAnimationSet] = useState(
+    window.GLOBAL_ANIMATION
+  );
 
   const [points, pointSet] = useState([
     { x: width * sourceImage.example[0], y: height * sourceImage.example[1] },
@@ -188,8 +203,18 @@ function App() {
   ]);
 
   useEffect(() => {
+    window.addEventListener('resize', () => {
+      windowSizeSet({
+        width: window.innerWidth,
+        height: window.innerHeight,
+      });
+      sourceImageSet({ ...EXAMPLES[Object.keys(EXAMPLES)[CHOOSEN_EXAMPLE]] });
+    });
+  }, []);
+
+  useEffect(() => {
     const size = Math.min(
-      window.innerHeight - 64,
+      window.innerHeight - TOPNAV_HEIGHT,
       window.innerWidth / sourceImage.ratio
     );
     const width = size * sourceImage.ratio;
@@ -441,21 +466,6 @@ function App() {
     return nineToSixteen(multmm(nineA, nineB));
   }
 
-  // function transformStyles(deep = 1) {
-  //   let newDeepCss = nullTransformArray;
-  //   for (let x = 0; x < deep; x++) {
-  //     newDeepCss = multmm2(newDeepCss, cssTransform.flat());
-  //   }
-
-  //   const deepCss = `matrix3d(${newDeepCss.join(',')})`;
-
-  //   return {
-  //     height,
-  //     width,
-  //     transform: deepCss
-  //   };
-  // }
-
   const imageTransformArray = [nullTransformArray];
 
   for (let imageIdx = 1; imageIdx < drosteDeep; imageIdx++) {
@@ -463,14 +473,6 @@ function App() {
       multmm2(imageTransformArray[imageIdx - 1], cssTransform.flat())
     );
   }
-
-  // function transformStyles(deep = 1) {
-  //   return {
-  //     height,
-  //     width,
-  //     transform: new Array(deep).fill(css).join(' ')
-  //   };
-  // }
 
   useEffect(() => {
     window.GLOBAL_ANIMATION = currentAnimation;
@@ -511,11 +513,14 @@ function App() {
     <Fragment key={sourceImage.src}>
       <div
         className="main"
+        style={{
+          top: TOPNAV_HEIGHT,
+          left: SHOW_UI ? 0 : (window.innerWidth - width) / 2,
+        }}
         onClick={() => {
           showSidebarSet(false);
         }}
       >
-        <JBX accent={'#e74c3c'} />
         <div
           className="img image-container-cut"
           style={{
@@ -578,128 +583,133 @@ function App() {
         </Draggable>
       </div>
 
-      <div className={`sidebar ${finalShowSidebar ? '' : '-hide'}`}>
-        <div className="sidebar-element">
-          <Dropdown
-            label="Controls"
-            value={drawMode}
-            options={{
-              handleDrag: 'Free',
-              handleDragMirror: 'Mirror',
-              handleDragLockAspect: 'Aspect Lock',
-            }}
-            onChange={drawModeSet}
-          />
-        </div>
+      {SHOW_UI && (
+        <div className={`sidebar ${finalShowSidebar ? '' : '-hide'}`}>
+          <div className="sidebar-element">
+            <Dropdown
+              label="Controls"
+              value={drawMode}
+              options={{
+                handleDrag: 'Free',
+                handleDragMirror: 'Mirror',
+                handleDragLockAspect: 'Aspect Lock',
+              }}
+              onChange={drawModeSet}
+            />
+          </div>
 
-        <div className="sidebar-element">
-          <Dropdown
-            label="Depth"
-            value={drosteDeep}
-            options={{
-              2: 2,
-              8: 8,
-              16: 16,
-              32: 32,
-              72: 72,
-              128: 128,
-              256: '256 ⚠️',
-            }}
-            onChange={(val) => drosteDeepSet(Number(val))}
-          />
-        </div>
+          <div className="sidebar-element">
+            <Dropdown
+              label="Depth"
+              value={drosteDeep}
+              options={{
+                2: 2,
+                8: 8,
+                16: 16,
+                32: 32,
+                72: 72,
+                128: 128,
+                256: '256 ⚠️',
+              }}
+              onChange={(val) => drosteDeepSet(Number(val))}
+            />
+          </div>
 
-        <div className="sidebar-element">
-          <Dropdown
-            label="Animation"
-            value={currentAnimation}
-            options={DEFAULT_ANIMATIONS}
-            onChange={currentAnimationSet}
-          />
-        </div>
+          <div className="sidebar-element">
+            <Dropdown
+              label="Animation"
+              value={currentAnimation}
+              options={DEFAULT_ANIMATIONS}
+              onChange={currentAnimationSet}
+            />
+          </div>
 
-        <hr />
+          <hr />
 
-        <div className="sidebar-element">
-          <Dropdown
-            label="Load Example"
-            value={null}
-            options={Object.keys(EXAMPLES)}
-            onChange={(exampleKey) => {
-              const exampleObject = EXAMPLES[Object.keys(EXAMPLES)[exampleKey]];
-              sourceImageSet(exampleObject);
-            }}
-          />
-        </div>
+          <div className="sidebar-element">
+            <Dropdown
+              label="Load Example"
+              value={null}
+              options={Object.keys(EXAMPLES)}
+              onChange={(exampleKey) => {
+                const exampleObject =
+                  EXAMPLES[Object.keys(EXAMPLES)[exampleKey]];
+                sourceImageSet(exampleObject);
+              }}
+            />
+          </div>
 
-        <div className="sidebar-element">
-          <Text>
-            Droste Creator is a tool to create recursive images. Source{' '}
-            <A href="https://github.com/javierbyte/droste-creator">Github</A>.
-            Code and pictures by <A href="https://javier.xyz">javierbyte</A>.
-          </Text>
-        </div>
-
-        {false && (
           <div className="sidebar-element">
             <Text>
-              {Number(points[0].x / width).toFixed(4)},
-              {Number(points[0].y / height).toFixed(4)},
-              {Number(points[1].x / width).toFixed(4)},
-              {Number(points[1].y / height).toFixed(4)},
-              {Number(points[2].x / width).toFixed(4)},
-              {Number(points[2].y / height).toFixed(4)},
-              {Number(points[3].x / width).toFixed(4)},
-              {Number(points[3].y / height).toFixed(4)},
+              Droste Creator is a tool to create recursive images. Source{' '}
+              <A href="https://github.com/javierbyte/droste-creator">Github</A>.
+              Code and pictures by <A href="https://javier.xyz">javierbyte</A>.
             </Text>
           </div>
-        )}
-      </div>
 
-      <div className="topnav">
-        <Text style={{ flex: 1, display: 'flex', flexWrap: 'wrap' }}>
-          <div>Droste</div>
-          <strong>Creator</strong>
-        </Text>
+          {false && (
+            <div className="sidebar-element">
+              <Text>
+                {Number(points[0].x / width).toFixed(4)},
+                {Number(points[0].y / height).toFixed(4)},
+                {Number(points[1].x / width).toFixed(4)},
+                {Number(points[1].y / height).toFixed(4)},
+                {Number(points[2].x / width).toFixed(4)},
+                {Number(points[2].y / height).toFixed(4)},
+                {Number(points[3].x / width).toFixed(4)},
+                {Number(points[3].y / height).toFixed(4)},
+              </Text>
+            </div>
+          )}
+        </div>
+      )}
 
-        <div style={{ flex: 1 }} />
+      {SHOW_UI && (
+        <div className="topnav">
+          <Text style={{ flex: 1, display: 'flex', flexWrap: 'wrap' }}>
+            <div>Droste</div>
+            <strong>Creator</strong>
+          </Text>
 
-        <Button onClick={onNewPicture}>New Picture</Button>
+          <div style={{ flex: 1 }} />
 
-        <input
-          className="jb-file-uploader"
-          type="file"
-          onChange={onFileSelected}
-          multiple
-          accept="image/*"
-          aria-label="Drop an image here, or click to select"
-        />
+          <Button onClick={onNewPicture}>New Picture</Button>
 
-        <Space w={1} />
+          <input
+            className="jb-file-uploader"
+            type="file"
+            onChange={onFileSelected}
+            multiple
+            accept="image/*"
+            aria-label="Drop an image here, or click to select"
+          />
 
-        {!isSidebarAlwaysVisible && (
-          <Button
-            onClick={() => {
-              showSidebarSet(!showSidebar);
-            }}
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="24"
-              height="24"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
+          <Space w={1} />
+
+          {!isSidebarAlwaysVisible && (
+            <Button
+              onClick={() => {
+                showSidebarSet(!showSidebar);
+              }}
             >
-              <circle cx="12" cy="12" r="3"></circle>
-              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
-            </svg>
-          </Button>
-        )}
-      </div>
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="24"
+                height="24"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <circle cx="12" cy="12" r="3"></circle>
+                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+              </svg>
+            </Button>
+          )}
+        </div>
+      )}
     </Fragment>
   );
 }

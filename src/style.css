@@ -1,3 +1,7 @@
+:root {
+  --accent-color: #eb4d4b;
+}
+
 body,
 button {
   font-size: 16px;
@@ -6,13 +10,16 @@ button {
 button:active {
 }
 
+body {
+  background: #95a5a6 !important;
+}
+
 .main {
   position: fixed;
-  top: 64px;
+  top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-  background: #95a5a6;
 }
 
 .image-container {
