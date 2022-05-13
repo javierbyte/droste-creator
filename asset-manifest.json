@@ -1,10 +1,10 @@
 {
   "files": {
-    "main.css": "/static/css/main.371746a4.css",
-    "main.js": "/static/js/main.06eddd21.js",
-    "index.html": "/index.html",
-    "main.371746a4.css.map": "/static/css/main.371746a4.css.map",
-    "main.06eddd21.js.map": "/static/js/main.06eddd21.js.map"
+    "main.css": "/droste-creator/static/css/main.371746a4.css",
+    "main.js": "/droste-creator/static/js/main.06eddd21.js",
+    "index.html": "/droste-creator/index.html",
+    "main.371746a4.css.map": "/droste-creator/static/css/main.371746a4.css.map",
+    "main.06eddd21.js.map": "/droste-creator/static/js/main.06eddd21.js.map"
   },
   "entrypoints": [
     "static/css/main.371746a4.css",
