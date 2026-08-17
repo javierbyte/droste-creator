@@ -1,2 +1,2 @@
 :HL["/droste-creator/_next/static/chunks/3yv2v-mjkysm_.css","style"]
-0:{"tree":{"name":"","param":null,"prefetchHints":4176,"slots":{"children":{"name":"__PAGE__","param":null,"prefetchHints":4256,"slots":null}}},"staleTime":300,"buildId":"Hq9u5kMO2hkRUhbUzyK_R"}
+0:{"tree":{"name":"","param":null,"prefetchHints":4176,"slots":{"children":{"name":"__PAGE__","param":null,"prefetchHints":4256,"slots":null}}},"staleTime":300,"buildId":"HASCSZlTlBSm3zUvz5ztc"}
