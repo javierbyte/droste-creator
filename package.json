@@ -1,50 +1,39 @@
 {
   "name": "droste-creator",
-  "description": "create droste images with droste effect",
-  "version": "1.0.0",
-  "private": true,
-  "homepage": "/droste-creator",
-  "dependencies": {
-    "jbx": "^2.4.0",
-    "react": "^18.2.0",
-    "react-dom": "^18.2.0",
-    "react-draggable": "^4.4.5",
-    "react-scripts": "^5.0.1"
-  },
+  "description": "Create recursive images with the droste effect.",
+  "version": "2.0.0",
+  "type": "module",
+  "packageManager": "pnpm@11.21.0",
   "scripts": {
-    "dev": "react-scripts start",
-    "build": "react-scripts build",
-    "test": "react-scripts test",
-    "eject": "react-scripts eject",
-    "predeploy": "npm run build",
-    "deploy": "gh-pages -d build"
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
   },
-  "eslintConfig": {
-    "extends": "react-app"
-  },
-  "browserslist": {
-    "production": [
-      ">0.5%",
-      "not dead",
-      "not IE 11",
-      "not IE_Mob 11",
-      "not op_mini all"
-    ],
-    "development": [
-      "last 1 chrome version",
-      "last 1 firefox version",
-      "last 1 safari version"
-    ]
-  },
+  "homepage": "https://javier.xyz/droste-creator",
   "repository": {
     "type": "git",
-    "url": "https://github.com/javierbyte/droste-generator"
+    "url": "https://github.com/javierbyte/droste-creator.git"
   },
-  "author": "Javier Bórquez <hi@javier.xyz>",
+  "keywords": [
+    "droste",
+    "recursive",
+    "images",
+    "experiments",
+    "react"
+  ],
+  "author": "Javier Bórquez <hi@javier.xyz> (http://github.com/javierbyte)",
   "license": "BSD-3-Clause",
+  "bugs": {
+    "url": "https://github.com/javierbyte/droste-creator/issues"
+  },
+  "dependencies": {
+    "jbx": "^2.12.0",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8",
+    "react-draggable": "^4.7.1"
+  },
   "devDependencies": {
-    "eslint": "^8.8.0",
-    "eslint-plugin-react": "^7.28.0",
-    "gh-pages": "^4.0.0"
+    "@vitejs/plugin-react": "^6.0.5",
+    "vite": "^8.2.1"
   }
 }

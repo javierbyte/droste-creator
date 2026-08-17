@@ -1,6 +1,27 @@
-import { Button, Text, Space, A } from 'jbx';
+import {
+  MainHeader,
+  HeaderH3,
+  Text,
+  Space,
+  Container,
+  Dropzone,
+  Inline,
+  Tabs,
+  Tab,
+  Range,
+  Input,
+  A,
+  MoreExperiments,
+} from 'jbx';
 
-import { Fragment, useState, useRef, useEffect } from 'react';
+import {
+  Fragment,
+  createRef,
+  useState,
+  useRef,
+  useEffect,
+  useCallback,
+} from 'react';
 import Draggable from 'react-draggable';
 
 import transform2d from './lib/4point.js';
@@ -18,11 +39,21 @@ function rndArr(arr) {
   });
 }
 
-const SHOW_UI = true;
-const TOPNAV_HEIGHT = SHOW_UI ? 64 : 0;
-const SIDEBAR_WIDTH = 300;
+const MAX_STAGE_VH = 0.6;
 
-window.GLOBAL_ANIMATION = rnd() > 0.5 ? 'IN' : 'OUT';
+const MIN_DEPTH = 2;
+const MAX_DEPTH = 64;
+const MIN_LAYER_PX = 8;
+
+const SPEED_PRESETS = {
+  Slow: 4,
+  Normal: 2,
+  Fast: 1,
+};
+const MIN_CYCLE_SECONDS = 0.2;
+const MAX_CYCLE_SECONDS = 60;
+
+const MAX_FRAME_SECONDS = 0.1;
 
 function polar2cartesian({ distance, angle }) {
   return {
@@ -46,71 +77,11 @@ const DEFAULT_ANIMATIONS = {
   OUT: 'Out',
 };
 
-const useClickOutside = (ref, callback) => {
-  const handleClick = (e) => {
-    if (ref.current && !ref.current.contains(e.target)) {
-      callback();
-    }
-  };
-  useEffect(() => {
-    document.addEventListener('click', handleClick);
-    return () => {
-      document.removeEventListener('click', handleClick);
-    };
-  });
+const DRAW_MODES = {
+  handleDrag: 'Free',
+  handleDragMirror: 'Mirror',
+  handleDragLockAspect: 'Aspect Lock',
 };
-
-function Dropdown({ label, value, options, onChange, disabled = false }) {
-  const [isVisible, isVisibleSet] = useState(false);
-  const clickRef = useRef();
-  useClickOutside(clickRef, () => {
-    isVisibleSet(false);
-  });
-
-  return (
-    <div
-      className={`dropdown ${isVisible ? '' : '-hide'} ${
-        disabled ? '-disabled' : ''
-      }`}
-      ref={clickRef}
-      onClick={() => {
-        isVisibleSet(!disabled && !isVisible);
-      }}
-    >
-      <Text className="dropdown-header">
-        {label} <strong>{options[value]}</strong>
-      </Text>
-      <svg
-        xmlns="http://www.w3.org/2000/svg"
-        width="24"
-        height="24"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      >
-        <polyline points="6 9 12 15 18 9"></polyline>
-      </svg>
-
-      <div className="dropdown-options">
-        {Object.keys(options).map((optionKey) => (
-          <div
-            className="dropdown-option"
-            key={optionKey}
-            onClick={() => {
-              onChange(optionKey);
-              isVisibleSet(false);
-            }}
-          >
-            <Text>{options[optionKey]}</Text>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
 
 function getCounterPoint(id) {
   if (id === 0) return 3;
@@ -119,133 +90,253 @@ function getCounterPoint(id) {
   if (id === 3) return 0;
 }
 
-function onNewPicture() {
-  console.info('>>');
-
-  document.querySelector('.jb-file-uploader').click();
+function exampleSrc(name) {
+  return `${import.meta.env.BASE_URL}examples/${name}`;
 }
 
 const EXAMPLES = {
-  // Flor: {
-  //   src: '/examples/flor.jpg',
-  //   ratio: 1,
-  //   example: [0.852, 0.001, 1.1312, 0.6366, -0.073, 0.28, 0.148, 0.999],
-  //   deep: 40,
-  // },
   'Tokyo 1': {
-    src: '/droste-creator/examples/tokyo1.jpg',
+    src: exampleSrc('tokyo1.jpg'),
     ratio: 3 / 4,
     example: rndArr([0.15, 0.2, 0.85, 0.2, 0.15, 0.9, 0.85, 0.9]),
-    deep: 40,
   },
   'Tokyo 2': {
-    src: '/droste-creator/examples/tokyo2.jpg',
+    src: exampleSrc('tokyo2.jpg'),
     ratio: 3 / 4,
     example: rndArr([0.15, 0.2, 0.85, 0.2, 0.15, 0.9, 0.85, 0.9]),
-    deep: 40,
   },
   'Tokyo 3': {
-    src: '/droste-creator/examples/tokyo3.jpg',
+    src: exampleSrc('tokyo3.jpg'),
     ratio: 3 / 4,
     example: rndArr([0.15, 0.2, 0.85, 0.2, 0.15, 0.9, 0.85, 0.9]),
-    deep: 40,
   },
   Stars: {
-    src: '/droste-creator/examples/stars.jpg',
+    src: exampleSrc('stars.jpg'),
     ratio: 3 / 4,
     example: rndArr([0.15, 0.2, 0.85, 0.2, 0.15, 0.9, 0.85, 0.9]),
-    deep: 40,
   },
   Dotomblurry: {
-    src: '/droste-creator/examples/dotomblurry.jpg',
+    src: exampleSrc('dotomblurry.jpg'),
     ratio: 3 / 4,
     example: rndArr([0.15, 0.12, 0.85, 0.12, 0.15, 0.87, 0.85, 0.87]),
-    deep: 40,
   },
 };
 const CHOOSEN_EXAMPLE = Math.floor(rnd() * Object.keys(EXAMPLES).length);
+const DEFAULT_EXAMPLE_KEY = Object.keys(EXAMPLES)[CHOOSEN_EXAMPLE];
+
+function exampleToPoints(example) {
+  return [
+    { x: example[0], y: example[1] },
+    { x: example[2], y: example[3] },
+    { x: example[4], y: example[5] },
+    { x: example[6], y: example[7] },
+  ];
+}
+
+async function resizeImage(base64Str, maxMass = 728 * 728) {
+  return new Promise((resolve) => {
+    let img = new Image();
+    img.src = base64Str;
+    img.onload = () => {
+      let canvas = document.createElement('canvas');
+
+      const originalWidth = img.width;
+      const originalHeight = img.height;
+
+      let width = img.width;
+      let height = img.height;
+
+      while (width * height > maxMass) {
+        width = width / Math.sqrt(2, 2);
+        height = height / Math.sqrt(2, 2);
+      }
+
+      width = Math.round(width);
+      height = Math.round(height);
+
+      canvas.width = width;
+      canvas.height = height;
+      let ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0, width, height);
+      resolve([canvas.toDataURL(), { originalWidth, originalHeight }]);
+    };
+  });
+}
+
+function multmm(a, b) {
+  // multiply two matrices
+  var c = Array(9);
+  for (var i = 0; i != 3; ++i) {
+    for (var j = 0; j != 3; ++j) {
+      var cij = 0;
+      for (var k = 0; k != 3; ++k) {
+        cij += a[3 * i + k] * b[3 * k + j];
+      }
+      c[3 * i + j] = cij;
+    }
+  }
+  return c;
+}
+
+function sixteenToNine(sixteen) {
+  const [
+    var0,
+    var3,
+    null7,
+    var6,
+    var1,
+    var4,
+    null1,
+    var7,
+    null2,
+    null3,
+    null4,
+    null5,
+    var2,
+    var5,
+    null6,
+    var8,
+  ] = sixteen;
+
+  return [var0, var1, var2, var3, var4, var5, var6, var7, var8];
+}
+
+function nineToSixteen(t) {
+  return [
+    t[0],
+    t[3],
+    0,
+    t[6],
+    t[1],
+    t[4],
+    0,
+    t[7],
+    0,
+    0,
+    1,
+    0,
+    t[2],
+    t[5],
+    0,
+    t[8],
+  ];
+}
+
+function multmm2(sixteenA, sixteenB) {
+  const nineA = sixteenToNine(sixteenA);
+  const nineB = sixteenToNine(sixteenB);
+
+  return nineToSixteen(multmm(nineA, nineB));
+}
+
+function applyTransform(nine, x, y) {
+  const w = nine[6] * x + nine[7] * y + nine[8];
+  return {
+    x: (nine[0] * x + nine[1] * y + nine[2]) / w,
+    y: (nine[3] * x + nine[4] * y + nine[5]) / w,
+  };
+}
+
+function layerLongestSide(sixteen, width, height) {
+  const nine = sixteenToNine(sixteen);
+
+  const corners = [
+    [0, 0],
+    [width, 0],
+    [width, height],
+    [0, height],
+  ].map(([x, y]) => applyTransform(nine, x, y));
+
+  let longest = 0;
+  for (let idx = 0; idx < corners.length; idx++) {
+    const from = corners[idx];
+    const to = corners[(idx + 1) % corners.length];
+
+    const side = Math.sqrt(
+      Math.pow(to.x - from.x, 2) + Math.pow(to.y - from.y, 2)
+    );
+
+    if (!Number.isFinite(side)) return Infinity;
+    if (side > longest) longest = side;
+  }
+
+  return longest;
+}
 
 function App() {
-  const [windowSize, windowSizeSet] = useState({
-    width: window.innerWidth,
-    height: window.innerHeight,
-  });
-  const [sourceImage, sourceImageSet] = useState(
-    EXAMPLES[Object.keys(EXAMPLES)[CHOOSEN_EXAMPLE]]
-  );
+  const [sourceImage, sourceImageSet] = useState(EXAMPLES[DEFAULT_EXAMPLE_KEY]);
+  const [currentExample, currentExampleSet] = useState(DEFAULT_EXAMPLE_KEY);
 
-  const size = Math.min(
-    windowSize.height - TOPNAV_HEIGHT,
-    windowSize.width / sourceImage.ratio
-  );
-  const width = size * sourceImage.ratio;
-  const height = size;
-
-  const [showSidebar, showSidebarSet] = useState(false);
   const [drawMode, drawModeSet] = useState('handleDrag');
-
-  const [drosteDeep, drosteDeepSet] = useState(sourceImage.deep || 32);
-
-  // always show if enough space
-  const isSidebarAlwaysVisible = window.innerWidth - width > SIDEBAR_WIDTH;
-
-  const finalShowSidebar = isSidebarAlwaysVisible ? true : showSidebar;
-
   const [currentAnimation, currentAnimationSet] = useState(
-    window.GLOBAL_ANIMATION
+    rnd() > 0.5 ? 'IN' : 'OUT'
   );
 
-  const [points, pointSet] = useState([
-    { x: width * sourceImage.example[0], y: height * sourceImage.example[1] },
-    { x: width * sourceImage.example[2], y: height * sourceImage.example[3] },
-    { x: width * sourceImage.example[4], y: height * sourceImage.example[5] },
-    { x: width * sourceImage.example[6], y: height * sourceImage.example[7] },
-  ]);
+  const [cycleSeconds, cycleSecondsSet] = useState(SPEED_PRESETS.Normal);
+  const [speedDraft, speedDraftSet] = useState(String(SPEED_PRESETS.Normal));
+
+  function speedSet(seconds) {
+    cycleSecondsSet(seconds);
+    speedDraftSet(String(seconds));
+  }
+
+  function speedDraftChange(value) {
+    speedDraftSet(value);
+
+    const parsed = Number(value);
+    if (
+      value.trim() !== '' &&
+      Number.isFinite(parsed) &&
+      parsed >= MIN_CYCLE_SECONDS &&
+      parsed <= MAX_CYCLE_SECONDS
+    ) {
+      cycleSecondsSet(parsed);
+    }
+  }
+
+  const [points, pointSet] = useState(() =>
+    exampleToPoints(sourceImage.example)
+  );
+
+  const stageWrapRef = useRef(null);
+  const [stage, stageSet] = useState({ width: 0, height: 0 });
 
   useEffect(() => {
-    window.addEventListener('resize', () => {
-      windowSizeSet({
-        width: window.innerWidth,
-        height: window.innerHeight,
-      });
-      sourceImageSet({ ...EXAMPLES[Object.keys(EXAMPLES)[CHOOSEN_EXAMPLE]] });
-    });
-  }, []);
+    const wrap = stageWrapRef.current;
+    if (!wrap) return;
+
+    function measure() {
+      const available = wrap.getBoundingClientRect().width;
+      const maxHeight = window.innerHeight * MAX_STAGE_VH;
+
+      const width = Math.min(available, maxHeight * sourceImage.ratio);
+      stageSet({ width, height: width / sourceImage.ratio });
+    }
+
+    measure();
+
+    const observer = new window.ResizeObserver(measure);
+    observer.observe(wrap);
+    window.addEventListener('resize', measure);
+
+    return () => {
+      observer.disconnect();
+      window.removeEventListener('resize', measure);
+    };
+  }, [sourceImage.ratio]);
+
+  const { width, height } = stage;
 
   useEffect(() => {
-    const size = Math.min(
-      window.innerHeight - TOPNAV_HEIGHT,
-      window.innerWidth / sourceImage.ratio
-    );
-    const width = size * sourceImage.ratio;
-    const height = size;
-
-    sourceImageSet(sourceImage);
-    drosteDeepSet(sourceImage.deep || 32);
-    pointSet([
-      {
-        x: width * sourceImage.example[0],
-        y: height * sourceImage.example[1],
-      },
-      {
-        x: width * sourceImage.example[2],
-        y: height * sourceImage.example[3],
-      },
-      {
-        x: width * sourceImage.example[4],
-        y: height * sourceImage.example[5],
-      },
-      {
-        x: width * sourceImage.example[6],
-        y: height * sourceImage.example[7],
-      },
-    ]);
+    pointSet(exampleToPoints(sourceImage.example));
   }, [sourceImage]);
+
+  const pointRefs = useRef([0, 1, 2, 3].map(() => createRef()));
 
   function handleDrag({ x, y }, id) {
     pointSet((oldPoints) => {
       const newPoints = [...oldPoints];
-      newPoints[id] = { x, y };
+      newPoints[id] = { x: x / width, y: y / height };
       return newPoints;
     });
   }
@@ -253,70 +344,21 @@ function App() {
   function handleDragMirror({ x, y }, id) {
     pointSet((oldPoints) => {
       const newPoints = [...oldPoints];
-      newPoints[id] = { x, y };
-      newPoints[getCounterPoint(id)] = { x: width - x, y: height - y };
+      newPoints[id] = { x: x / width, y: y / height };
+      newPoints[getCounterPoint(id)] = {
+        x: 1 - x / width,
+        y: 1 - y / height,
+      };
       return newPoints;
     });
   }
 
-  async function resizeImage(base64Str, maxMass = 728 * 728) {
-    return new Promise((resolve) => {
-      let img = new Image();
-      img.src = base64Str;
-      img.onload = () => {
-        let canvas = document.createElement('canvas');
-
-        const originalWidth = img.width;
-        const originalHeight = img.height;
-
-        let width = img.width;
-        let height = img.height;
-
-        while (width * height > maxMass) {
-          width = width / Math.sqrt(2, 2);
-          height = height / Math.sqrt(2, 2);
-        }
-
-        width = Math.round(width);
-        height = Math.round(height);
-
-        canvas.width = width;
-        canvas.height = height;
-        let ctx = canvas.getContext('2d');
-        ctx.drawImage(img, 0, 0, width, height);
-        resolve([canvas.toDataURL(), { originalWidth, originalHeight }]);
-      };
-    });
-  }
-
-  function onFileSelected(event) {
-    event.stopPropagation();
-    event.preventDefault();
-
-    const dt = event.dataTransfer;
-    const files = dt ? dt.files : event.target.files;
-    const file = files[0];
-
-    const fr = new window.FileReader();
-
-    fr.onload = async (data) => {
-      const base64src = data.currentTarget.result;
-
-      const [base64, imageData] = await resizeImage(base64src);
-
-      sourceImageSet({
-        src: base64,
-        ratio: imageData.originalWidth / imageData.originalHeight,
-        example: [0.2, 0.2, 0.8, 0.2, 0.2, 0.8, 0.8, 0.8],
-        deep: 20,
-      });
-    };
-    fr.readAsDataURL(file);
-  }
-
   function handleDragLockAspect({ x, y }, id) {
     pointSet((oldPoints) => {
-      const newPoints = [...oldPoints];
+      const newPoints = oldPoints.map((point) => ({
+        x: point.x * width,
+        y: point.y * height,
+      }));
 
       // moved point
       newPoints[id] = { x, y };
@@ -376,7 +418,10 @@ function App() {
         y: origin.y + polar2cartesian(point2PolarTransformed).y,
       };
 
-      return newPoints;
+      return newPoints.map((point) => ({
+        x: point.x / width,
+        y: point.y / height,
+      }));
     });
   }
 
@@ -386,331 +431,361 @@ function App() {
     handleDragLockAspect,
   };
 
+  const onFileSelected = useCallback((event) => {
+    event.stopPropagation();
+    event.preventDefault();
+
+    const dt = event.dataTransfer;
+    const files = dt ? dt.files : event.target.files;
+    const file = files && files[0];
+    if (!file) return;
+
+    const fr = new window.FileReader();
+
+    fr.onload = async (data) => {
+      const base64src = data.currentTarget.result;
+
+      const [base64, imageData] = await resizeImage(base64src);
+
+      currentExampleSet(null);
+      sourceImageSet({
+        src: base64,
+        ratio: imageData.originalWidth / imageData.originalHeight,
+        example: [0.2, 0.2, 0.8, 0.2, 0.2, 0.8, 0.8, 0.8],
+      });
+    };
+    fr.readAsDataURL(file);
+  }, []);
+
+  const pixelPoints = points.map((point) => ({
+    x: point.x * width,
+    y: point.y * height,
+  }));
+
   const cssTransform = transform2d(
     width,
     height,
-    points[0].x,
-    points[0].y,
-    points[1].x,
-    points[1].y,
-    points[2].x,
-    points[2].y,
-    points[3].x,
-    points[3].y
+    pixelPoints[0].x,
+    pixelPoints[0].y,
+    pixelPoints[1].x,
+    pixelPoints[1].y,
+    pixelPoints[2].x,
+    pixelPoints[2].y,
+    pixelPoints[3].x,
+    pixelPoints[3].y
   );
   const invertedTransformArray = invertMatrix(cssTransform).flat();
 
-  function multmm(a, b) {
-    // multiply two matrices
-    var c = Array(9);
-    for (var i = 0; i != 3; ++i) {
-      for (var j = 0; j != 3; ++j) {
-        var cij = 0;
-        for (var k = 0; k != 3; ++k) {
-          cij += a[3 * i + k] * b[3 * k + j];
-        }
-        c[3 * i + j] = cij;
-      }
-    }
-    return c;
-  }
-
-  function sixteenToNine(sixteen) {
-    const [
-      var0,
-      var3,
-      null7,
-      var6,
-      var1,
-      var4,
-      null1,
-      var7,
-      null2,
-      null3,
-      null4,
-      null5,
-      var2,
-      var5,
-      null6,
-      var8,
-    ] = sixteen;
-
-    return [var0, var1, var2, var3, var4, var5, var6, var7, var8];
-  }
-
-  function nineToSixteen(t) {
-    return [
-      t[0],
-      t[3],
-      0,
-      t[6],
-      t[1],
-      t[4],
-      0,
-      t[7],
-      0,
-      0,
-      1,
-      0,
-      t[2],
-      t[5],
-      0,
-      t[8],
-    ];
-  }
-
-  function multmm2(sixteenA, sixteenB) {
-    const nineA = sixteenToNine(sixteenA);
-    const nineB = sixteenToNine(sixteenB);
-
-    return nineToSixteen(multmm(nineA, nineB));
-  }
-
   const imageTransformArray = [nullTransformArray];
 
-  for (let imageIdx = 1; imageIdx < drosteDeep; imageIdx++) {
-    imageTransformArray.push(
-      multmm2(imageTransformArray[imageIdx - 1], cssTransform.flat())
-    );
+  while (width > 0 && height > 0 && imageTransformArray.length < MAX_DEPTH) {
+    const previous = imageTransformArray[imageTransformArray.length - 1];
+    const transform = multmm2(previous, cssTransform.flat());
+
+    imageTransformArray.push(transform);
+
+    if (
+      imageTransformArray.length >= MIN_DEPTH &&
+      layerLongestSide(transform, width, height) <= MIN_LAYER_PX
+    ) {
+      break;
+    }
   }
 
+  const drosteDeep = imageTransformArray.length;
+
+  const animatableRef = useRef(null);
+  const animationRef = useRef(currentAnimation);
   useEffect(() => {
-    window.GLOBAL_ANIMATION = currentAnimation;
+    animationRef.current = currentAnimation;
   }, [currentAnimation]);
 
+  const cycleSecondsRef = useRef(cycleSeconds);
   useEffect(() => {
-    const animatableEl = document.querySelector('.main-animatable');
+    cycleSecondsRef.current = cycleSeconds;
+  }, [cycleSeconds]);
 
-    let progress = 0;
+  const progressRef = useRef(0);
+  useEffect(() => {
+    let frame = null;
+    let lastTime = null;
 
-    function animate() {
-      if (window.GLOBAL_ANIMATION === 'OUT') {
-        progress += 0.009;
-        if (progress > 1) progress -= 1;
-      } else if (window.GLOBAL_ANIMATION === 'IN') {
-        progress -= 0.009;
-        if (progress < 0) progress += 1;
+    function animate(now) {
+      const animatableEl = animatableRef.current;
+      if (!animatableEl) return;
+
+      const elapsed =
+        lastTime === null
+          ? 0
+          : Math.min((now - lastTime) / 1000, MAX_FRAME_SECONDS);
+      lastTime = now;
+
+      const step = elapsed / cycleSecondsRef.current;
+
+      if (animationRef.current === 'OUT') {
+        progressRef.current += step;
+        if (progressRef.current > 1) progressRef.current -= 1;
+      } else if (animationRef.current === 'IN') {
+        progressRef.current -= step;
+        if (progressRef.current < 0) progressRef.current += 1;
+      } else {
+        progressRef.current = 0;
       }
+
+      const progress = progressRef.current;
 
       const interpolatedValues = invertedTransformArray.map((el, elIdx) => {
         return el * progress + nullTransformArray[elIdx] * (1 - progress);
       });
 
-      const interpolatedCss = `matrix3d(${interpolatedValues.join(',')})`;
-      animatableEl.style.transform = interpolatedCss;
+      animatableEl.style.transform = `matrix3d(${interpolatedValues.join(
+        ','
+      )})`;
 
-      if (window.GLOBAL_ANIMATION !== 'OFF') {
-        window.requestAnimationFrame(animate);
-      } else {
-        const interpolatedCss = `matrix3d(${nullTransformArray.join(',')})`;
-        animatableEl.style.transform = interpolatedCss;
-      }
+      frame = window.requestAnimationFrame(animate);
     }
-    animate();
-  }, [invertedTransformArray, currentAnimation]);
+
+    frame = window.requestAnimationFrame(animate);
+
+    return () => {
+      if (frame !== null) window.cancelAnimationFrame(frame);
+    };
+  }, [invertedTransformArray]);
 
   return (
-    <Fragment key={sourceImage.src}>
-      <div
-        className="main"
-        style={{
-          top: TOPNAV_HEIGHT,
-          left: SHOW_UI ? 0 : (window.innerWidth - width) / 2,
-        }}
-        onClick={() => {
-          showSidebarSet(false);
-        }}
-      >
-        <div
-          className="img image-container-cut"
-          style={{
-            height,
-            width,
-            overflow: 'hidden',
-          }}
-        >
-          <div className="main-animatable image-container -transformable">
-            {imageTransformArray.map((transform, imageIdx) => (
-              <img
-                key={imageIdx}
-                alt=""
-                className="img -transformed -transformable"
+    <Container>
+      <MainHeader>Droste Creator</MainHeader>
+      <Space h={1} />
+      <Text>
+        Create recursive images with the droste effect. Drag the four handles to
+        choose the region that repeats into itself.
+      </Text>
+
+      <Space h={2} />
+
+      <div ref={stageWrapRef}>
+        <div className="stage" style={{ height, width }}>
+          {width > 0 && (
+            <Fragment>
+              <div
+                className="img image-container-cut"
                 style={{
-                  width,
                   height,
-                  transform: `matrix3d(${transform.join(',')})`,
+                  width,
+                  overflow: 'hidden',
                 }}
-                src={sourceImage.src}
-              />
-            ))}
-          </div>
+              >
+                <div
+                  ref={animatableRef}
+                  className="main-animatable image-container -transformable"
+                >
+                  {imageTransformArray.map((transform, imageIdx) => (
+                    <img
+                      key={imageIdx}
+                      alt=""
+                      className="img -transformed -transformable"
+                      style={{
+                        width,
+                        height,
+                        transform: `matrix3d(${transform.join(',')})`,
+                      }}
+                      src={sourceImage.src}
+                    />
+                  ))}
+                </div>
+              </div>
+
+              {[0, 1, 2, 3].map((pointIdx) => {
+                if (
+                  drawMode === 'handleDragLockAspect' &&
+                  (pointIdx === 1 || pointIdx === 2)
+                ) {
+                  return null;
+                }
+
+                return (
+                  <Draggable
+                    key={pointIdx}
+                    nodeRef={pointRefs.current[pointIdx]}
+                    position={pixelPoints[pointIdx]}
+                    onDrag={(evt, data) =>
+                      DRAW_MODE_FUNCTION[drawMode](data, pointIdx)
+                    }
+                  >
+                    <button
+                      ref={pointRefs.current[pointIdx]}
+                      className="point"
+                      aria-label={`Corner ${pointIdx}`}
+                    >
+                      {pointIdx}
+                    </button>
+                  </Draggable>
+                );
+              })}
+            </Fragment>
+          )}
         </div>
-
-        <Draggable
-          defaultPosition={points[0]}
-          position={points[0]}
-          onDrag={(evt, data) => DRAW_MODE_FUNCTION[drawMode](data, 0)}
-        >
-          <button className="point">0</button>
-        </Draggable>
-
-        {drawMode !== 'handleDragLockAspect' && (
-          <Draggable
-            defaultPosition={points[1]}
-            position={points[1]}
-            onDrag={(evt, data) => DRAW_MODE_FUNCTION[drawMode](data, 1)}
-          >
-            <button className="point">1</button>
-          </Draggable>
-        )}
-
-        {drawMode !== 'handleDragLockAspect' && (
-          <Draggable
-            defaultPosition={points[2]}
-            position={points[2]}
-            onDrag={(evt, data) => DRAW_MODE_FUNCTION[drawMode](data, 2)}
-          >
-            <button className="point">2</button>
-          </Draggable>
-        )}
-
-        <Draggable
-          defaultPosition={points[3]}
-          position={points[3]}
-          onDrag={(evt, data) => DRAW_MODE_FUNCTION[drawMode](data, 3)}
-        >
-          <button className="point">3</button>
-        </Draggable>
       </div>
 
-      {SHOW_UI && (
-        <div className={`sidebar ${finalShowSidebar ? '' : '-hide'}`}>
-          <div className="sidebar-element">
-            <Dropdown
-              label="Controls"
-              value={drawMode}
-              options={{
-                handleDrag: 'Free',
-                handleDragMirror: 'Mirror',
-                handleDragLockAspect: 'Aspect Lock',
-              }}
-              onChange={drawModeSet}
-            />
-          </div>
+      <Space h={2} />
 
-          <div className="sidebar-element">
-            <Dropdown
-              label="Depth"
-              value={drosteDeep}
-              options={{
-                2: 2,
-                8: 8,
-                16: 16,
-                32: 32,
-                72: 72,
-                128: 128,
-                256: '256 ⚠️',
-              }}
-              onChange={(val) => drosteDeepSet(Number(val))}
-            />
-          </div>
-
-          <div className="sidebar-element">
-            <Dropdown
-              label="Animation"
-              value={currentAnimation}
-              options={DEFAULT_ANIMATIONS}
-              onChange={currentAnimationSet}
-            />
-          </div>
-
-          <hr />
-
-          <div className="sidebar-element">
-            <Dropdown
-              label="Load Example"
-              value={null}
-              options={Object.keys(EXAMPLES)}
-              onChange={(exampleKey) => {
-                const exampleObject =
-                  EXAMPLES[Object.keys(EXAMPLES)[exampleKey]];
-                sourceImageSet(exampleObject);
-              }}
-            />
-          </div>
-
-          <div className="sidebar-element">
-            <Text>
-              Droste Creator is a tool to create recursive images. Source{' '}
-              <A href="https://github.com/javierbyte/droste-creator">Github</A>.
-              Code and pictures by <A href="https://javier.xyz">javierbyte</A>.
-            </Text>
-          </div>
-
-          {false && (
-            <div className="sidebar-element">
-              <Text>
-                {Number(points[0].x / width).toFixed(4)},
-                {Number(points[0].y / height).toFixed(4)},
-                {Number(points[1].x / width).toFixed(4)},
-                {Number(points[1].y / height).toFixed(4)},
-                {Number(points[2].x / width).toFixed(4)},
-                {Number(points[2].y / height).toFixed(4)},
-                {Number(points[3].x / width).toFixed(4)},
-                {Number(points[3].y / height).toFixed(4)},
-              </Text>
-            </div>
-          )}
-        </div>
-      )}
-
-      {SHOW_UI && (
-        <div className="topnav">
-          <Text style={{ flex: 1, display: 'flex', flexWrap: 'wrap' }}>
-            <div>Droste</div>
-            <strong>Creator</strong>
-          </Text>
-
-          <div style={{ flex: 1 }} />
-
-          <Button onClick={onNewPicture}>New Picture</Button>
-
-          <input
-            className="jb-file-uploader"
-            type="file"
-            onChange={onFileSelected}
-            multiple
-            accept="image/*"
-            aria-label="Drop an image here, or click to select"
-          />
-
-          <Space w={1} />
-
-          {!isSidebarAlwaysVisible && (
-            <Button
+      <Tabs>
+        <Inline>
+          <Tab info>
+            <Text>Controls:</Text>
+          </Tab>
+          {Object.keys(DRAW_MODES).map((drawModeKey) => (
+            <Tab
+              active={drawMode === drawModeKey}
+              key={drawModeKey}
               onClick={() => {
-                showSidebarSet(!showSidebar);
+                drawModeSet(drawModeKey);
               }}
             >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width="24"
-                height="24"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <circle cx="12" cy="12" r="3"></circle>
-                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
-              </svg>
-            </Button>
-          )}
-        </div>
-      )}
-    </Fragment>
+              <Text>{DRAW_MODES[drawModeKey]}</Text>
+            </Tab>
+          ))}
+        </Inline>
+      </Tabs>
+
+      <Space h={1} />
+
+      <Tabs>
+        <Inline>
+          <Tab info>
+            <Text>Animation:</Text>
+          </Tab>
+          {Object.keys(DEFAULT_ANIMATIONS).map((animationKey) => (
+            <Tab
+              active={currentAnimation === animationKey}
+              key={animationKey}
+              onClick={() => {
+                currentAnimationSet(animationKey);
+              }}
+            >
+              <Text>{DEFAULT_ANIMATIONS[animationKey]}</Text>
+            </Tab>
+          ))}
+        </Inline>
+      </Tabs>
+
+      <Space h={1} />
+
+      <Tabs>
+        <Inline style={{ alignItems: 'center' }}>
+          <Tab info>
+            <Text>Speed:</Text>
+          </Tab>
+          {Object.keys(SPEED_PRESETS).map((speedKey) => (
+            <Tab
+              active={cycleSeconds === SPEED_PRESETS[speedKey]}
+              key={speedKey}
+              onClick={() => {
+                speedSet(SPEED_PRESETS[speedKey]);
+              }}
+            >
+              <Text>{speedKey}</Text>
+            </Tab>
+          ))}
+          <Tab info>
+            <Inline wrap={false} style={{ alignItems: 'center' }}>
+              <Space w={0.5} inline />
+              <Input
+                type="number"
+                aria-label="Seconds per loop"
+                value={speedDraft}
+                onChange={(e) => speedDraftChange(e.target.value)}
+                step="0.5"
+                min={MIN_CYCLE_SECONDS}
+                max={MAX_CYCLE_SECONDS}
+                style={{ flex: 'none', width: 72 }}
+              />
+              <Space w={0.5} inline />
+              <Text>seconds per loop</Text>
+            </Inline>
+          </Tab>
+        </Inline>
+      </Tabs>
+
+      <Space h={1} />
+
+      <Tabs>
+        <Inline>
+          <Tab info>
+            <Text>Examples:</Text>
+          </Tab>
+          {Object.keys(EXAMPLES).map((exampleKey) => (
+            <Tab
+              active={currentExample === exampleKey}
+              key={exampleKey}
+              onClick={() => {
+                currentExampleSet(exampleKey);
+                sourceImageSet(EXAMPLES[exampleKey]);
+              }}
+            >
+              <Text>{exampleKey}</Text>
+            </Tab>
+          ))}
+        </Inline>
+      </Tabs>
+
+      <Space h={2} />
+
+      <Text>
+        Depth <span style={{ color: '#666' }}>{drosteDeep}</span>{' '}
+        <span style={{ color: '#666' }}>
+          (automatic, stops at ~{MIN_LAYER_PX}px copies)
+        </span>
+      </Text>
+      <Space h={1} />
+      <Range
+        aria-label="Depth"
+        value={drosteDeep}
+        readOnly
+        disabled
+        min={MIN_DEPTH}
+        max={MAX_DEPTH}
+      />
+
+      <Space h={2} />
+
+      <Dropzone onDrop={onFileSelected}>
+        <Text>Click or drop your own image here</Text>
+        <input
+          type="file"
+          onChange={onFileSelected}
+          accept="image/*"
+          aria-label="Drop an image here, or click to select"
+        />
+      </Dropzone>
+
+      <Space h={2} />
+
+      <HeaderH3>How does it work?</HeaderH3>
+      <Space h={0.5} />
+      <Text>
+        The four handles describe where a copy of the picture should land inside
+        itself. From those corners we solve the projective transform that maps
+        the full image onto that quadrilateral, then apply it over and over —
+        each copy is the previous copy's matrix multiplied by that transform
+        again. Copies keep being added until the newest one measures about{' '}
+        {MIN_LAYER_PX} pixels across, which is why the depth changes as you drag
+        the handles. The result is rendered as a stack of plain <code>img</code>{' '}
+        tags with a CSS <code>matrix3d</code> each, so the browser composites
+        the whole recursion on the GPU. Animating means walking the whole stack
+        along the inverse transform, which makes it look like you are falling
+        into the picture forever.
+      </Text>
+
+      <Space h={2} />
+
+      <MoreExperiments exclude="droste-creator" />
+
+      <Space h={2} />
+      <Text>
+        Made by <A href="https://javier.xyz">javierbyte</A>.
+      </Text>
+    </Container>
   );
 }
 
