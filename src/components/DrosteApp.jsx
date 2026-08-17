@@ -1,18 +1,6 @@
-import {
-  MainHeader,
-  HeaderH3,
-  Text,
-  Space,
-  Container,
-  Dropzone,
-  Inline,
-  Tabs,
-  Tab,
-  Range,
-  Input,
-  A,
-  MoreExperiments,
-} from 'jbx';
+'use client';
+
+import { Text, Space, Dropzone, Inline, Tabs, Tab, Input } from 'jbx';
 
 import {
   Fragment,
@@ -24,23 +12,14 @@ import {
 } from 'react';
 import Draggable from 'react-draggable';
 
-import transform2d from './lib/4point.js';
-import invertMatrix from './lib/invertMatrix.js';
-
-const rnd = window.fxrand || Math.random;
-function rndArr(arr) {
-  return arr.map((e) => {
-    let tmp = e + (rnd() * 0.2 - 0.1);
-    if (tmp < 0.5) {
-      return tmp / 2;
-    } else {
-      return (tmp + 1) / 2;
-    }
-  });
-}
+import transform2d from '@/lib/4point.js';
+import invertMatrix from '@/lib/invertMatrix.js';
+import { BASE_PATH } from '@/lib/basePath.js';
 
 const MAX_STAGE_VH = 0.6;
 
+// Depth is automatic: copies are added until the newest one is about
+// MIN_LAYER_PX across, with MAX_DEPTH as the hard ceiling.
 const MIN_DEPTH = 2;
 const MAX_DEPTH = 64;
 const MIN_LAYER_PX = 8;
@@ -91,38 +70,40 @@ function getCounterPoint(id) {
 }
 
 function exampleSrc(name) {
-  return `${import.meta.env.BASE_URL}examples/${name}`;
+  return `${BASE_PATH}/examples/${name}`;
 }
 
 const EXAMPLES = {
   'Tokyo 1': {
     src: exampleSrc('tokyo1.jpg'),
     ratio: 3 / 4,
-    example: rndArr([0.15, 0.2, 0.85, 0.2, 0.15, 0.9, 0.85, 0.9]),
+    example: [0.15, 0.2, 0.85, 0.2, 0.15, 0.9, 0.85, 0.9],
   },
   'Tokyo 2': {
     src: exampleSrc('tokyo2.jpg'),
     ratio: 3 / 4,
-    example: rndArr([0.15, 0.2, 0.85, 0.2, 0.15, 0.9, 0.85, 0.9]),
+    example: [0.15, 0.2, 0.85, 0.2, 0.15, 0.9, 0.85, 0.9],
   },
   'Tokyo 3': {
     src: exampleSrc('tokyo3.jpg'),
     ratio: 3 / 4,
-    example: rndArr([0.15, 0.2, 0.85, 0.2, 0.15, 0.9, 0.85, 0.9]),
+    example: [0.15, 0.2, 0.85, 0.2, 0.15, 0.9, 0.85, 0.9],
   },
   Stars: {
     src: exampleSrc('stars.jpg'),
     ratio: 3 / 4,
-    example: rndArr([0.15, 0.2, 0.85, 0.2, 0.15, 0.9, 0.85, 0.9]),
+    example: [0.15, 0.2, 0.85, 0.2, 0.15, 0.9, 0.85, 0.9],
   },
   Dotomblurry: {
     src: exampleSrc('dotomblurry.jpg'),
     ratio: 3 / 4,
-    example: rndArr([0.15, 0.12, 0.85, 0.12, 0.15, 0.87, 0.85, 0.87]),
+    example: [0.15, 0.12, 0.85, 0.12, 0.15, 0.87, 0.85, 0.87],
   },
 };
-const CHOOSEN_EXAMPLE = Math.floor(rnd() * Object.keys(EXAMPLES).length);
-const DEFAULT_EXAMPLE_KEY = Object.keys(EXAMPLES)[CHOOSEN_EXAMPLE];
+
+// Fixed so the prerendered html matches what the browser renders.
+const DEFAULT_EXAMPLE_KEY = Object.keys(EXAMPLES)[0];
+const DEFAULT_ANIMATION = 'IN';
 
 function exampleToPoints(example) {
   return [
@@ -263,14 +244,12 @@ function layerLongestSide(sixteen, width, height) {
   return longest;
 }
 
-function App() {
+function DrosteApp() {
   const [sourceImage, sourceImageSet] = useState(EXAMPLES[DEFAULT_EXAMPLE_KEY]);
   const [currentExample, currentExampleSet] = useState(DEFAULT_EXAMPLE_KEY);
 
   const [drawMode, drawModeSet] = useState('handleDrag');
-  const [currentAnimation, currentAnimationSet] = useState(
-    rnd() > 0.5 ? 'IN' : 'OUT'
-  );
+  const [currentAnimation, currentAnimationSet] = useState(DEFAULT_ANIMATION);
 
   const [cycleSeconds, cycleSecondsSet] = useState(SPEED_PRESETS.Normal);
   const [speedDraft, speedDraftSet] = useState(String(SPEED_PRESETS.Normal));
@@ -492,8 +471,6 @@ function App() {
     }
   }
 
-  const drosteDeep = imageTransformArray.length;
-
   const animatableRef = useRef(null);
   const animationRef = useRef(currentAnimation);
   useEffect(() => {
@@ -553,16 +530,7 @@ function App() {
   }, [invertedTransformArray]);
 
   return (
-    <Container>
-      <MainHeader>Droste Creator</MainHeader>
-      <Space h={1} />
-      <Text>
-        Create recursive images with the droste effect. Drag the four handles to
-        choose the region that repeats into itself.
-      </Text>
-
-      <Space h={2} />
-
+    <Fragment>
       <div ref={stageWrapRef}>
         <div className="stage" style={{ height, width }}>
           {width > 0 && (
@@ -731,24 +699,6 @@ function App() {
 
       <Space h={2} />
 
-      <Text>
-        Depth <span style={{ color: '#666' }}>{drosteDeep}</span>{' '}
-        <span style={{ color: '#666' }}>
-          (automatic, stops at ~{MIN_LAYER_PX}px copies)
-        </span>
-      </Text>
-      <Space h={1} />
-      <Range
-        aria-label="Depth"
-        value={drosteDeep}
-        readOnly
-        disabled
-        min={MIN_DEPTH}
-        max={MAX_DEPTH}
-      />
-
-      <Space h={2} />
-
       <Dropzone onDrop={onFileSelected}>
         <Text>Click or drop your own image here</Text>
         <input
@@ -758,35 +708,8 @@ function App() {
           aria-label="Drop an image here, or click to select"
         />
       </Dropzone>
-
-      <Space h={2} />
-
-      <HeaderH3>How does it work?</HeaderH3>
-      <Space h={0.5} />
-      <Text>
-        The four handles describe where a copy of the picture should land inside
-        itself. From those corners we solve the projective transform that maps
-        the full image onto that quadrilateral, then apply it over and over —
-        each copy is the previous copy's matrix multiplied by that transform
-        again. Copies keep being added until the newest one measures about{' '}
-        {MIN_LAYER_PX} pixels across, which is why the depth changes as you drag
-        the handles. The result is rendered as a stack of plain <code>img</code>{' '}
-        tags with a CSS <code>matrix3d</code> each, so the browser composites
-        the whole recursion on the GPU. Animating means walking the whole stack
-        along the inverse transform, which makes it look like you are falling
-        into the picture forever.
-      </Text>
-
-      <Space h={2} />
-
-      <MoreExperiments exclude="droste-creator" />
-
-      <Space h={2} />
-      <Text>
-        Made by <A href="https://javier.xyz">javierbyte</A>.
-      </Text>
-    </Container>
+    </Fragment>
   );
 }
 
-export default App;
+export default DrosteApp;

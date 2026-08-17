@@ -11,5 +11,5 @@ pnpm install
 pnpm dev
 ```
 
-`pnpm build` writes the site to `dist/`. Pushing to `master` deploys it to the
+`pnpm build` writes the static site to `out/`. Pushing to `master` deploys it to the
 `gh-pages` branch, which `javier.xyz/droste-creator` serves.
