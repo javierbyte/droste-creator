@@ -2,6 +2,13 @@
   --accent-color: #26b095;
 }
 
+.github-corner {
+  z-index: 10;
+  position: absolute;
+  top: 0;
+  right: 0;
+}
+
 .stage {
   position: relative;
   margin: 0 auto;
