@@ -730,181 +730,157 @@ function DrosteApp() {
 
       <Space h={1} />
 
-      <Tabs>
-        <Inline>
-          <Tab info>
-            <Text>Speed:</Text>
-          </Tab>
-          {Object.keys(SPEED_PRESETS).map((speedKey) => (
-            <Tab
-              active={cycleSeconds === SPEED_PRESETS[speedKey]}
-              key={speedKey}
-              onClick={() => {
-                cycleSecondsSet(SPEED_PRESETS[speedKey]);
-              }}
-            >
-              <Text>{speedKey}</Text>
+      <Inline gap={0.5} style={{ alignItems: 'center' }}>
+        <Tabs>
+          <Inline>
+            <Tab info>
+              <Text>Speed:</Text>
             </Tab>
-          ))}
-          <Tab info>
-            <Inline wrap={false} style={{ alignItems: 'center' }}>
-              <Space w={0.5} inline />
-              <Input
-                aria-label="Seconds per loop"
-                value={cycleSeconds}
-                onValueChange={cycleSecondsSet}
-                step="0.5"
-                min={MIN_CYCLE_SECONDS}
-                max={MAX_CYCLE_SECONDS}
-                style={{ width: 72 }}
-              />
-              <Space w={0.5} inline />
-              <Text>seconds per loop</Text>
-            </Inline>
-          </Tab>
-        </Inline>
-      </Tabs>
+            {Object.keys(SPEED_PRESETS).map((speedKey) => (
+              <Tab
+                active={cycleSeconds === SPEED_PRESETS[speedKey]}
+                key={speedKey}
+                onClick={() => {
+                  cycleSecondsSet(SPEED_PRESETS[speedKey]);
+                }}
+              >
+                <Text>{speedKey}</Text>
+              </Tab>
+            ))}
+          </Inline>
+        </Tabs>
+        <Input
+          aria-label="Seconds per loop"
+          value={cycleSeconds}
+          onValueChange={cycleSecondsSet}
+          step="0.5"
+          min={MIN_CYCLE_SECONDS}
+          max={MAX_CYCLE_SECONDS}
+          style={{ flex: 'none', width: 88 }}
+        />
+        <Text>seconds per loop</Text>
+      </Inline>
 
       <Space h={1} />
 
-      <Tabs>
-        <Inline>
-          <Tab info>
-            <Text>Export size:</Text>
-          </Tab>
-          {naturalSide && (
-            <Tab
-              active={longestSide === naturalSide}
-              onClick={() => {
-                longestSideSet(naturalSide);
-              }}
-            >
-              <Text>Original</Text>
+      <Inline gap={0.5} style={{ alignItems: 'center' }}>
+        <Tabs>
+          <Inline>
+            <Tab info>
+              <Text>Export size:</Text>
             </Tab>
-          )}
-          {Object.keys(SIZE_PRESETS).map((sizeKey) => (
-            <Tab
-              active={longestSide === SIZE_PRESETS[sizeKey]}
-              key={sizeKey}
-              onClick={() => {
-                longestSideSet(SIZE_PRESETS[sizeKey]);
-              }}
-            >
-              <Text>{sizeKey}</Text>
-            </Tab>
-          ))}
-          <Tab info>
-            <Inline wrap={false} style={{ alignItems: 'center' }}>
-              <Space w={0.5} inline />
-              <Input
-                aria-label="Longest side in pixels"
-                value={longestSide}
-                onValueChange={longestSideSet}
-                step="10"
-                min={MIN_EXPORT_SIDE}
-                max={MAX_EXPORT_SIDE}
-                style={{ width: 82 }}
-              />
-              <Space w={0.5} inline />
-              <Text>
-                px, giving {exportDimensions.width}&times;
-                {exportDimensions.height}
-              </Text>
-            </Inline>
-          </Tab>
-        </Inline>
-      </Tabs>
+            {naturalSide && (
+              <Tab
+                active={longestSide === naturalSide}
+                onClick={() => {
+                  longestSideSet(naturalSide);
+                }}
+              >
+                <Text>Original</Text>
+              </Tab>
+            )}
+            {Object.keys(SIZE_PRESETS).map((sizeKey) => (
+              <Tab
+                active={longestSide === SIZE_PRESETS[sizeKey]}
+                key={sizeKey}
+                onClick={() => {
+                  longestSideSet(SIZE_PRESETS[sizeKey]);
+                }}
+              >
+                <Text>{sizeKey}</Text>
+              </Tab>
+            ))}
+          </Inline>
+        </Tabs>
+        <Input
+          aria-label="Longest side in pixels"
+          value={longestSide}
+          onValueChange={longestSideSet}
+          step="10"
+          min={MIN_EXPORT_SIDE}
+          max={MAX_EXPORT_SIDE}
+          style={{ flex: 'none', width: 100 }}
+        />
+        <Text>
+          px, giving {exportDimensions.width}&times;
+          {exportDimensions.height}
+        </Text>
+      </Inline>
 
       {isAnimating && (
         <Fragment>
           <Space h={1} />
 
-          <Tabs>
-            <Inline>
-              <Tab info>
-                <Text>Export length:</Text>
-              </Tab>
-              <Tab info>
-                <Inline wrap={false} style={{ alignItems: 'center' }}>
-                  <Text>at least</Text>
-                  <Space w={0.5} inline />
-                  <Input
-                    aria-label="Minimum length in seconds"
-                    value={minSeconds}
-                    onValueChange={minSecondsSet}
-                    step="1"
-                    min={0}
-                    max={MAX_EXPORT_SECONDS}
-                    style={{ width: 72 }}
-                  />
-                  <Space w={0.5} inline />
-                  <Text>seconds and</Text>
-                  <Space w={0.5} inline />
-                  <Input
-                    aria-label="Minimum number of loops"
-                    value={minLoops}
-                    onValueChange={minLoopsSet}
-                    step="1"
-                    min={1}
-                    max={MAX_EXPORT_LOOPS}
-                    style={{ width: 62 }}
-                  />
-                  <Space w={0.5} inline />
-                  <Text>loops</Text>
-                </Inline>
-              </Tab>
-              <Tab info>
-                <Text>
-                  &rarr; {exportPlan.loops}&times;
-                  {exportPlan.cycleDuration.toFixed(2)}s ={' '}
-                  {exportPlan.duration.toFixed(2)}s,{' '}
-                  {exportPlan.totalFrames} frames
-                </Text>
-              </Tab>
-            </Inline>
-          </Tabs>
+          <Inline gap={0.5} style={{ alignItems: 'center' }}>
+            <Tabs>
+              <Inline>
+                <Tab info>
+                  <Text>Export length:</Text>
+                </Tab>
+              </Inline>
+            </Tabs>
+            <Text>at least</Text>
+            <Input
+              aria-label="Minimum length in seconds"
+              value={minSeconds}
+              onValueChange={minSecondsSet}
+              step="1"
+              min={0}
+              max={MAX_EXPORT_SECONDS}
+              style={{ flex: 'none', width: 80 }}
+            />
+            <Text>seconds and</Text>
+            <Input
+              aria-label="Minimum number of loops"
+              value={minLoops}
+              onValueChange={minLoopsSet}
+              step="1"
+              min={1}
+              max={MAX_EXPORT_LOOPS}
+              style={{ flex: 'none', width: 72 }}
+            />
+            <Text>
+              loops &rarr; {exportPlan.loops}&times;
+              {exportPlan.cycleDuration.toFixed(2)}s ={' '}
+              {exportPlan.duration.toFixed(2)}s, {exportPlan.totalFrames} frames
+            </Text>
+          </Inline>
         </Fragment>
       )}
 
       <Space h={1} />
 
-      <Tabs>
-        <Inline>
-          <Tab info>
-            <Text>Export as:</Text>
-          </Tab>
-          {isAnimating ? (
-            Object.keys(EXPORT_FORMATS).map((formatKey) => (
-              <Tab
-                active={exportFormat === formatKey}
-                key={formatKey}
-                onClick={() => {
-                  exportFormatSet(formatKey);
-                }}
-              >
-                <Text>{EXPORT_FORMATS[formatKey]}</Text>
-              </Tab>
-            ))
-          ) : (
-            <Tab active>
-              <Text>PNG</Text>
+      <Inline gap={0.5} style={{ alignItems: 'center' }}>
+        <Tabs>
+          <Inline>
+            <Tab info>
+              <Text>Export as:</Text>
             </Tab>
-          )}
-          <Tab info>
-            <Inline wrap={false} style={{ alignItems: 'center' }}>
-              <Space w={0.5} inline />
-              <Button
-                onClick={onExport}
-                disabled={exporting || !!rendererError}
-              >
-                {exporting
-                  ? `Exporting… ${Math.round(exportProgress * 100)}%`
-                  : 'Download'}
-              </Button>
-            </Inline>
-          </Tab>
-        </Inline>
-      </Tabs>
+            {isAnimating ? (
+              Object.keys(EXPORT_FORMATS).map((formatKey) => (
+                <Tab
+                  active={exportFormat === formatKey}
+                  key={formatKey}
+                  onClick={() => {
+                    exportFormatSet(formatKey);
+                  }}
+                >
+                  <Text>{EXPORT_FORMATS[formatKey]}</Text>
+                </Tab>
+              ))
+            ) : (
+              <Tab active>
+                <Text>PNG</Text>
+              </Tab>
+            )}
+          </Inline>
+        </Tabs>
+        <Button onClick={onExport} disabled={exporting || !!rendererError}>
+          {exporting
+            ? `Exporting… ${Math.round(exportProgress * 100)}%`
+            : 'Download'}
+        </Button>
+      </Inline>
 
       {!isAnimating && (
         <Fragment>
