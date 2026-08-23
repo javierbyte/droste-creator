@@ -1,6 +1,6 @@
 'use client';
 
-import { Text, Space, Dropzone, Inline, Tabs, Tab, Input } from 'jbx';
+import { Text, Space, Dropzone, Inline, Tabs, Tab, Input, Button } from 'jbx';
 
 import {
   Fragment,
@@ -15,14 +15,21 @@ import Draggable from 'react-draggable';
 import transform2d from '@/lib/4point.js';
 import invertMatrix from '@/lib/invertMatrix.js';
 import { BASE_PATH } from '@/lib/basePath.js';
+import { computeTransforms, interpolateTransform } from '@/lib/drosteMath.js';
+import { createDrosteRenderer } from '@/lib/drosteRender.js';
+import {
+  exportDroste,
+  exportSize,
+  planExport,
+  fpsFor,
+  downloadBlob,
+} from '@/lib/drosteExport.js';
 
 const MAX_STAGE_VH = 0.6;
 
-// Depth is automatic: copies are added until the newest one is about
-// MIN_LAYER_PX across, with MAX_DEPTH as the hard ceiling.
-const MIN_DEPTH = 2;
-const MAX_DEPTH = 64;
-const MIN_LAYER_PX = 8;
+// Keep in sync with `.stage` in globals.css: the canvas clears to this, so it
+// is also what shows through transparent source images in an export.
+const STAGE_BACKGROUND = '#ecf0f1';
 
 const SPEED_PRESETS = {
   Slow: 4,
@@ -31,6 +38,17 @@ const SPEED_PRESETS = {
 };
 const MIN_CYCLE_SECONDS = 0.2;
 const MAX_CYCLE_SECONDS = 60;
+
+const SIZE_PRESETS = {
+  Small: 480,
+  Medium: 720,
+  Large: 1080,
+};
+const MIN_EXPORT_SIDE = 64;
+const MAX_EXPORT_SIDE = 2048;
+
+const MAX_EXPORT_SECONDS = 60;
+const MAX_EXPORT_LOOPS = 20;
 
 const MAX_FRAME_SECONDS = 0.1;
 
@@ -48,12 +66,15 @@ function cartesian2polar({ x, y }) {
   };
 }
 
-const nullTransformArray = [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1];
-
 const DEFAULT_ANIMATIONS = {
   OFF: 'Off',
   IN: 'In',
   OUT: 'Out',
+};
+
+const EXPORT_FORMATS = {
+  gif: 'GIF',
+  mp4: 'Video',
 };
 
 const DRAW_MODES = {
@@ -105,6 +126,12 @@ const EXAMPLES = {
 const DEFAULT_EXAMPLE_KEY = Object.keys(EXAMPLES)[0];
 const DEFAULT_ANIMATION = 'IN';
 
+// Handles stay inside the picture: a corner outside it would sample nothing and
+// leave a gap in the recursion.
+function clamp01(value) {
+  return Math.min(1, Math.max(0, value));
+}
+
 function exampleToPoints(example) {
   return [
     { x: example[0], y: example[1] },
@@ -144,104 +171,30 @@ async function resizeImage(base64Str, maxMass = 728 * 728) {
   });
 }
 
-function multmm(a, b) {
-  // multiply two matrices
-  var c = Array(9);
-  for (var i = 0; i != 3; ++i) {
-    for (var j = 0; j != 3; ++j) {
-      var cij = 0;
-      for (var k = 0; k != 3; ++k) {
-        cij += a[3 * i + k] * b[3 * k + j];
-      }
-      c[3 * i + j] = cij;
+// A number input that only commits once what was typed parses inside range, so
+// half typed values never snap the stage around.
+function useNumberDraft(value, valueSet, { min, max }) {
+  const [draft, draftSet] = useState(String(value));
+
+  useEffect(() => {
+    draftSet(String(value));
+  }, [value]);
+
+  function draftChange(next) {
+    draftSet(next);
+
+    const parsed = Number(next);
+    if (
+      next.trim() !== '' &&
+      Number.isFinite(parsed) &&
+      parsed >= min &&
+      parsed <= max
+    ) {
+      valueSet(parsed);
     }
   }
-  return c;
-}
 
-function sixteenToNine(sixteen) {
-  const [
-    var0,
-    var3,
-    null7,
-    var6,
-    var1,
-    var4,
-    null1,
-    var7,
-    null2,
-    null3,
-    null4,
-    null5,
-    var2,
-    var5,
-    null6,
-    var8,
-  ] = sixteen;
-
-  return [var0, var1, var2, var3, var4, var5, var6, var7, var8];
-}
-
-function nineToSixteen(t) {
-  return [
-    t[0],
-    t[3],
-    0,
-    t[6],
-    t[1],
-    t[4],
-    0,
-    t[7],
-    0,
-    0,
-    1,
-    0,
-    t[2],
-    t[5],
-    0,
-    t[8],
-  ];
-}
-
-function multmm2(sixteenA, sixteenB) {
-  const nineA = sixteenToNine(sixteenA);
-  const nineB = sixteenToNine(sixteenB);
-
-  return nineToSixteen(multmm(nineA, nineB));
-}
-
-function applyTransform(nine, x, y) {
-  const w = nine[6] * x + nine[7] * y + nine[8];
-  return {
-    x: (nine[0] * x + nine[1] * y + nine[2]) / w,
-    y: (nine[3] * x + nine[4] * y + nine[5]) / w,
-  };
-}
-
-function layerLongestSide(sixteen, width, height) {
-  const nine = sixteenToNine(sixteen);
-
-  const corners = [
-    [0, 0],
-    [width, 0],
-    [width, height],
-    [0, height],
-  ].map(([x, y]) => applyTransform(nine, x, y));
-
-  let longest = 0;
-  for (let idx = 0; idx < corners.length; idx++) {
-    const from = corners[idx];
-    const to = corners[(idx + 1) % corners.length];
-
-    const side = Math.sqrt(
-      Math.pow(to.x - from.x, 2) + Math.pow(to.y - from.y, 2)
-    );
-
-    if (!Number.isFinite(side)) return Infinity;
-    if (side > longest) longest = side;
-  }
-
-  return longest;
+  return [draft, draftChange];
 }
 
 function DrosteApp() {
@@ -252,26 +205,35 @@ function DrosteApp() {
   const [currentAnimation, currentAnimationSet] = useState(DEFAULT_ANIMATION);
 
   const [cycleSeconds, cycleSecondsSet] = useState(SPEED_PRESETS.Normal);
-  const [speedDraft, speedDraftSet] = useState(String(SPEED_PRESETS.Normal));
+  const [speedDraft, speedDraftChange] = useNumberDraft(
+    cycleSeconds,
+    cycleSecondsSet,
+    { min: MIN_CYCLE_SECONDS, max: MAX_CYCLE_SECONDS }
+  );
 
-  function speedSet(seconds) {
-    cycleSecondsSet(seconds);
-    speedDraftSet(String(seconds));
-  }
+  const [exportFormat, exportFormatSet] = useState('gif');
+  const [longestSide, longestSideSet] = useState(SIZE_PRESETS.Small);
+  const [sizeDraft, sizeDraftChange] = useNumberDraft(
+    longestSide,
+    longestSideSet,
+    { min: MIN_EXPORT_SIDE, max: MAX_EXPORT_SIDE }
+  );
 
-  function speedDraftChange(value) {
-    speedDraftSet(value);
+  const [minSeconds, minSecondsSet] = useState(3);
+  const [secondsDraft, secondsDraftChange] = useNumberDraft(
+    minSeconds,
+    minSecondsSet,
+    { min: 0, max: MAX_EXPORT_SECONDS }
+  );
 
-    const parsed = Number(value);
-    if (
-      value.trim() !== '' &&
-      Number.isFinite(parsed) &&
-      parsed >= MIN_CYCLE_SECONDS &&
-      parsed <= MAX_CYCLE_SECONDS
-    ) {
-      cycleSecondsSet(parsed);
-    }
-  }
+  const [minLoops, minLoopsSet] = useState(1);
+  const [loopsDraft, loopsDraftChange] = useNumberDraft(minLoops, minLoopsSet, {
+    min: 1,
+    max: MAX_EXPORT_LOOPS,
+  });
+
+  const [exportProgress, exportProgressSet] = useState(null);
+  const [exportError, exportErrorSet] = useState(null);
 
   const [points, pointSet] = useState(() =>
     exampleToPoints(sourceImage.example)
@@ -312,10 +274,14 @@ function DrosteApp() {
 
   const pointRefs = useRef([0, 1, 2, 3].map(() => createRef()));
 
+  // The stage holds still while a handle is being placed -- aiming at a moving
+  // target is the whole problem.
+  const draggingRef = useRef(false);
+
   function handleDrag({ x, y }, id) {
     pointSet((oldPoints) => {
       const newPoints = [...oldPoints];
-      newPoints[id] = { x: x / width, y: y / height };
+      newPoints[id] = { x: clamp01(x / width), y: clamp01(y / height) };
       return newPoints;
     });
   }
@@ -323,10 +289,12 @@ function DrosteApp() {
   function handleDragMirror({ x, y }, id) {
     pointSet((oldPoints) => {
       const newPoints = [...oldPoints];
-      newPoints[id] = { x: x / width, y: y / height };
+      const point = { x: clamp01(x / width), y: clamp01(y / height) };
+
+      newPoints[id] = point;
       newPoints[getCounterPoint(id)] = {
-        x: 1 - x / width,
-        y: 1 - y / height,
+        x: 1 - point.x,
+        y: 1 - point.y,
       };
       return newPoints;
     });
@@ -397,10 +365,20 @@ function DrosteApp() {
         y: origin.y + polar2cartesian(point2PolarTransformed).y,
       };
 
-      return newPoints.map((point) => ({
+      const normalized = newPoints.map((point) => ({
         x: point.x / width,
         y: point.y / height,
       }));
+
+      // Corners 1 and 2 are derived from the rotation, so they can swing out
+      // even when the dragged one is inside. Refuse the whole move instead of
+      // clamping, which would break the locked aspect.
+      const escapes = normalized.some(
+        (point) =>
+          !(point.x >= 0 && point.x <= 1 && point.y >= 0 && point.y <= 1)
+      );
+
+      return escapes ? oldPoints : normalized;
     });
   }
 
@@ -454,24 +432,69 @@ function DrosteApp() {
     pixelPoints[3].y
   );
   const invertedTransformArray = invertMatrix(cssTransform).flat();
+  const imageTransformArray = computeTransforms({
+    cssTransform,
+    width,
+    height,
+  });
 
-  const imageTransformArray = [nullTransformArray];
+  const canvasRef = useRef(null);
+  const rendererRef = useRef(null);
+  const imageRef = useRef(null);
+  const [imageVersion, imageVersionSet] = useState(0);
+  const [rendererError, rendererErrorSet] = useState(null);
 
-  while (width > 0 && height > 0 && imageTransformArray.length < MAX_DEPTH) {
-    const previous = imageTransformArray[imageTransformArray.length - 1];
-    const transform = multmm2(previous, cssTransform.flat());
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
 
-    imageTransformArray.push(transform);
+    try {
+      // The canvas outlives the renderer across strict mode remounts, so the
+      // context has to stay usable.
+      rendererRef.current = createDrosteRenderer(canvas, {
+        releaseContext: false,
+      });
 
-    if (
-      imageTransformArray.length >= MIN_DEPTH &&
-      layerLongestSide(transform, width, height) <= MIN_LAYER_PX
-    ) {
-      break;
+      // A fresh renderer starts without a texture, so re-upload whatever is
+      // already loaded (fast refresh can rebuild it after the image landed).
+      if (imageRef.current) rendererRef.current.setImage(imageRef.current);
+    } catch (error) {
+      rendererErrorSet(error.message);
+      return;
     }
-  }
 
-  const animatableRef = useRef(null);
+    return () => {
+      rendererRef.current?.destroy();
+      rendererRef.current = null;
+    };
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    const image = new window.Image();
+
+    image.onload = () => {
+      if (cancelled) return;
+      imageRef.current = image;
+      imageVersionSet((version) => version + 1);
+    };
+    image.src = sourceImage.src;
+
+    return () => {
+      cancelled = true;
+    };
+  }, [sourceImage.src]);
+
+  useEffect(() => {
+    if (!imageVersion || !rendererRef.current || !imageRef.current) return;
+    rendererRef.current.setImage(imageRef.current);
+  }, [imageVersion]);
+
+  useEffect(() => {
+    if (!rendererRef.current || !(width > 0)) return;
+    rendererRef.current.resize(width, height, window.devicePixelRatio || 1);
+  }, [width, height]);
+
   const animationRef = useRef(currentAnimation);
   useEffect(() => {
     animationRef.current = currentAnimation;
@@ -482,22 +505,31 @@ function DrosteApp() {
     cycleSecondsRef.current = cycleSeconds;
   }, [cycleSeconds]);
 
+  // The animation loop reads the latest geometry from here, so that dragging a
+  // handle never has to restart it.
+  const drawStateRef = useRef(null);
+  useEffect(() => {
+    drawStateRef.current = {
+      transforms: imageTransformArray,
+      invertedTransform: invertedTransformArray,
+      width,
+      height,
+    };
+  });
+
   const progressRef = useRef(0);
   useEffect(() => {
     let frame = null;
     let lastTime = null;
 
     function animate(now) {
-      const animatableEl = animatableRef.current;
-      if (!animatableEl) return;
-
       const elapsed =
         lastTime === null
           ? 0
           : Math.min((now - lastTime) / 1000, MAX_FRAME_SECONDS);
       lastTime = now;
 
-      const step = elapsed / cycleSecondsRef.current;
+      const step = draggingRef.current ? 0 : elapsed / cycleSecondsRef.current;
 
       if (animationRef.current === 'OUT') {
         progressRef.current += step;
@@ -505,19 +537,25 @@ function DrosteApp() {
       } else if (animationRef.current === 'IN') {
         progressRef.current -= step;
         if (progressRef.current < 0) progressRef.current += 1;
-      } else {
+      } else if (!draggingRef.current) {
         progressRef.current = 0;
       }
 
-      const progress = progressRef.current;
+      const renderer = rendererRef.current;
+      const drawState = drawStateRef.current;
 
-      const interpolatedValues = invertedTransformArray.map((el, elIdx) => {
-        return el * progress + nullTransformArray[elIdx] * (1 - progress);
-      });
-
-      animatableEl.style.transform = `matrix3d(${interpolatedValues.join(
-        ','
-      )})`;
+      if (renderer && drawState && drawState.width > 0) {
+        renderer.draw({
+          transforms: drawState.transforms,
+          animated: interpolateTransform(
+            drawState.invertedTransform,
+            progressRef.current
+          ),
+          width: drawState.width,
+          height: drawState.height,
+          background: STAGE_BACKGROUND,
+        });
+      }
 
       frame = window.requestAnimationFrame(animate);
     }
@@ -527,73 +565,108 @@ function DrosteApp() {
     return () => {
       if (frame !== null) window.cancelAnimationFrame(frame);
     };
-  }, [invertedTransformArray]);
+  }, []);
+
+  const isAnimating = currentAnimation !== 'OFF';
+  const activeFormat = isAnimating ? exportFormat : 'png';
+  const exporting = exportProgress !== null;
+
+  const exportDimensions = exportSize({
+    longestSide,
+    ratio: sourceImage.ratio,
+  });
+  const exportPlan = planExport({
+    cycleSeconds,
+    minSeconds,
+    minLoops,
+    fps: fpsFor(activeFormat),
+  });
+
+  async function onExport() {
+    if (exporting || !imageRef.current) return;
+
+    exportErrorSet(null);
+    exportProgressSet(0);
+
+    try {
+      const { blob, extension } = await exportDroste({
+        format: activeFormat,
+        image: imageRef.current,
+        points,
+        ratio: sourceImage.ratio,
+        longestSide,
+        cycleSeconds,
+        direction: currentAnimation,
+        minSeconds,
+        minLoops,
+        background: STAGE_BACKGROUND,
+        onProgress: exportProgressSet,
+      });
+
+      downloadBlob(blob, `droste-${Date.now()}.${extension}`);
+    } catch (error) {
+      exportErrorSet(
+        (error && error.message) || String(error) || 'The export failed.'
+      );
+    } finally {
+      exportProgressSet(null);
+    }
+  }
 
   return (
     <Fragment>
       <div ref={stageWrapRef}>
         <div className="stage" style={{ height, width }}>
-          {width > 0 && (
-            <Fragment>
-              <div
-                className="img image-container-cut"
-                style={{
-                  height,
-                  width,
-                  overflow: 'hidden',
-                }}
-              >
-                <div
-                  ref={animatableRef}
-                  className="main-animatable image-container -transformable"
+          <canvas
+            ref={canvasRef}
+            className="img"
+            style={{ width, height }}
+            aria-label="Droste effect preview"
+          />
+
+          {width > 0 &&
+            [0, 1, 2, 3].map((pointIdx) => {
+              if (
+                drawMode === 'handleDragLockAspect' &&
+                (pointIdx === 1 || pointIdx === 2)
+              ) {
+                return null;
+              }
+
+              return (
+                <Draggable
+                  key={pointIdx}
+                  nodeRef={pointRefs.current[pointIdx]}
+                  position={pixelPoints[pointIdx]}
+                  onStart={() => {
+                    draggingRef.current = true;
+                  }}
+                  onDrag={(evt, data) =>
+                    DRAW_MODE_FUNCTION[drawMode](data, pointIdx)
+                  }
+                  onStop={() => {
+                    draggingRef.current = false;
+                  }}
                 >
-                  {imageTransformArray.map((transform, imageIdx) => (
-                    <img
-                      key={imageIdx}
-                      alt=""
-                      className="img -transformed -transformable"
-                      style={{
-                        width,
-                        height,
-                        transform: `matrix3d(${transform.join(',')})`,
-                      }}
-                      src={sourceImage.src}
-                    />
-                  ))}
-                </div>
-              </div>
-
-              {[0, 1, 2, 3].map((pointIdx) => {
-                if (
-                  drawMode === 'handleDragLockAspect' &&
-                  (pointIdx === 1 || pointIdx === 2)
-                ) {
-                  return null;
-                }
-
-                return (
-                  <Draggable
-                    key={pointIdx}
-                    nodeRef={pointRefs.current[pointIdx]}
-                    position={pixelPoints[pointIdx]}
-                    onDrag={(evt, data) =>
-                      DRAW_MODE_FUNCTION[drawMode](data, pointIdx)
-                    }
+                  <button
+                    ref={pointRefs.current[pointIdx]}
+                    className="point"
+                    aria-label={`Corner ${pointIdx}`}
                   >
-                    <button
-                      ref={pointRefs.current[pointIdx]}
-                      className="point"
-                      aria-label={`Corner ${pointIdx}`}
-                    >
-                      {pointIdx}
-                    </button>
-                  </Draggable>
-                );
-              })}
-            </Fragment>
-          )}
+                    {pointIdx}
+                  </button>
+                </Draggable>
+              );
+            })}
         </div>
       </div>
+
+      {rendererError && (
+        <Fragment>
+          <Space h={1} />
+          <Text>{rendererError}</Text>
+        </Fragment>
+      )}
 
       <Space h={2} />
 
@@ -649,7 +722,7 @@ function DrosteApp() {
               active={cycleSeconds === SPEED_PRESETS[speedKey]}
               key={speedKey}
               onClick={() => {
-                speedSet(SPEED_PRESETS[speedKey]);
+                cycleSecondsSet(SPEED_PRESETS[speedKey]);
               }}
             >
               <Text>{speedKey}</Text>
@@ -696,6 +769,156 @@ function DrosteApp() {
           ))}
         </Inline>
       </Tabs>
+
+      <Space h={2} />
+
+      <Tabs>
+        <Inline style={{ alignItems: 'center' }}>
+          <Tab info>
+            <Text>Export size:</Text>
+          </Tab>
+          {Object.keys(SIZE_PRESETS).map((sizeKey) => (
+            <Tab
+              active={longestSide === SIZE_PRESETS[sizeKey]}
+              key={sizeKey}
+              onClick={() => {
+                longestSideSet(SIZE_PRESETS[sizeKey]);
+              }}
+            >
+              <Text>{sizeKey}</Text>
+            </Tab>
+          ))}
+          <Tab info>
+            <Inline wrap={false} style={{ alignItems: 'center' }}>
+              <Space w={0.5} inline />
+              <Input
+                type="number"
+                aria-label="Longest side in pixels"
+                value={sizeDraft}
+                onChange={(e) => sizeDraftChange(e.target.value)}
+                step="10"
+                min={MIN_EXPORT_SIDE}
+                max={MAX_EXPORT_SIDE}
+                style={{ flex: 'none', width: 82 }}
+              />
+              <Space w={0.5} inline />
+              <Text>
+                px, giving {exportDimensions.width}&times;
+                {exportDimensions.height}
+              </Text>
+            </Inline>
+          </Tab>
+        </Inline>
+      </Tabs>
+
+      {isAnimating && (
+        <Fragment>
+          <Space h={1} />
+
+          <Tabs>
+            <Inline style={{ alignItems: 'center' }}>
+              <Tab info>
+                <Text>Export length:</Text>
+              </Tab>
+              <Tab info>
+                <Inline wrap={false} style={{ alignItems: 'center' }}>
+                  <Text>at least</Text>
+                  <Space w={0.5} inline />
+                  <Input
+                    type="number"
+                    aria-label="Minimum length in seconds"
+                    value={secondsDraft}
+                    onChange={(e) => secondsDraftChange(e.target.value)}
+                    step="1"
+                    min={0}
+                    max={MAX_EXPORT_SECONDS}
+                    style={{ flex: 'none', width: 72 }}
+                  />
+                  <Space w={0.5} inline />
+                  <Text>seconds and</Text>
+                  <Space w={0.5} inline />
+                  <Input
+                    type="number"
+                    aria-label="Minimum number of loops"
+                    value={loopsDraft}
+                    onChange={(e) => loopsDraftChange(e.target.value)}
+                    step="1"
+                    min={1}
+                    max={MAX_EXPORT_LOOPS}
+                    style={{ flex: 'none', width: 62 }}
+                  />
+                  <Space w={0.5} inline />
+                  <Text>loops</Text>
+                </Inline>
+              </Tab>
+              <Tab info>
+                <Text>
+                  &rarr; {exportPlan.loops}&times;
+                  {exportPlan.cycleDuration.toFixed(2)}s ={' '}
+                  {exportPlan.duration.toFixed(2)}s,{' '}
+                  {exportPlan.totalFrames} frames
+                </Text>
+              </Tab>
+            </Inline>
+          </Tabs>
+        </Fragment>
+      )}
+
+      <Space h={1} />
+
+      <Tabs>
+        <Inline style={{ alignItems: 'center' }}>
+          <Tab info>
+            <Text>Export as:</Text>
+          </Tab>
+          {isAnimating ? (
+            Object.keys(EXPORT_FORMATS).map((formatKey) => (
+              <Tab
+                active={exportFormat === formatKey}
+                key={formatKey}
+                onClick={() => {
+                  exportFormatSet(formatKey);
+                }}
+              >
+                <Text>{EXPORT_FORMATS[formatKey]}</Text>
+              </Tab>
+            ))
+          ) : (
+            <Tab active>
+              <Text>PNG</Text>
+            </Tab>
+          )}
+          <Tab info>
+            <Inline wrap={false} style={{ alignItems: 'center' }}>
+              <Space w={0.5} inline />
+              <Button
+                onClick={onExport}
+                disabled={exporting || !!rendererError}
+              >
+                {exporting
+                  ? `Exporting… ${Math.round(exportProgress * 100)}%`
+                  : 'Download'}
+              </Button>
+            </Inline>
+          </Tab>
+        </Inline>
+      </Tabs>
+
+      {!isAnimating && (
+        <Fragment>
+          <Space h={1} />
+          <Text>
+            Pick the In or Out animation to export a looping gif or video.
+          </Text>
+        </Fragment>
+      )}
+
+      {exportError && (
+        <Fragment>
+          <Space h={1} />
+          <Text>{exportError}</Text>
+        </Fragment>
+      )}
 
       <Space h={2} />
 

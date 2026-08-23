@@ -22,7 +22,8 @@ export default function Page() {
 
       <Space h={2} />
       <Text>
-        Made by <A href="https://javier.xyz">javierbyte</A>.
+        Made by <A href="https://javier.xyz">Javier Bórquez</A>. Online since
+        2021.
       </Text>
     </Container>
   );
