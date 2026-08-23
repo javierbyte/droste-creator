@@ -52,16 +52,6 @@ const MAX_EXPORT_LOOPS = 20;
 
 const MAX_FRAME_SECONDS = 0.1;
 
-// jbx sizes inputs and buttons for standalone use, which makes the rows holding
-// one taller than the plain tab rows. Set inline: jbx/main.css is imported
-// after globals.css, so a stylesheet rule here would be relying on specificity.
-// The button also carries `boxShadow: 'none'`, because jbx draws its shadow
-// outside the box, making it paint taller than the inputs beside it.
-const FIELD_STYLE = {
-  flex: 'none',
-  height: 'calc(var(--size) * 1.5)',
-};
-
 function polar2cartesian({ distance, angle }) {
   return {
     x: distance * Math.cos(angle),
@@ -184,32 +174,6 @@ async function resizeImage(base64Str, maxSide = MAX_EXPORT_SIDE) {
   });
 }
 
-// A number input that only commits once what was typed parses inside range, so
-// half typed values never snap the stage around.
-function useNumberDraft(value, valueSet, { min, max }) {
-  const [draft, draftSet] = useState(String(value));
-
-  useEffect(() => {
-    draftSet(String(value));
-  }, [value]);
-
-  function draftChange(next) {
-    draftSet(next);
-
-    const parsed = Number(next);
-    if (
-      next.trim() !== '' &&
-      Number.isFinite(parsed) &&
-      parsed >= min &&
-      parsed <= max
-    ) {
-      valueSet(parsed);
-    }
-  }
-
-  return [draft, draftChange];
-}
-
 function DrosteApp() {
   const [sourceImage, sourceImageSet] = useState(EXAMPLES[DEFAULT_EXAMPLE_KEY]);
   const [currentExample, currentExampleSet] = useState(DEFAULT_EXAMPLE_KEY);
@@ -218,34 +182,14 @@ function DrosteApp() {
   const [currentAnimation, currentAnimationSet] = useState(DEFAULT_ANIMATION);
 
   const [cycleSeconds, cycleSecondsSet] = useState(SPEED_PRESETS.Normal);
-  const [speedDraft, speedDraftChange] = useNumberDraft(
-    cycleSeconds,
-    cycleSecondsSet,
-    { min: MIN_CYCLE_SECONDS, max: MAX_CYCLE_SECONDS }
-  );
 
   const [exportFormat, exportFormatSet] = useState('gif');
   // Null until the source image has loaded and reported its size.
   const [naturalSide, naturalSideSet] = useState(null);
   const [longestSide, longestSideSet] = useState(SIZE_PRESETS.Medium);
-  const [sizeDraft, sizeDraftChange] = useNumberDraft(
-    longestSide,
-    longestSideSet,
-    { min: MIN_EXPORT_SIDE, max: MAX_EXPORT_SIDE }
-  );
 
   const [minSeconds, minSecondsSet] = useState(3);
-  const [secondsDraft, secondsDraftChange] = useNumberDraft(
-    minSeconds,
-    minSecondsSet,
-    { min: 0, max: MAX_EXPORT_SECONDS }
-  );
-
   const [minLoops, minLoopsSet] = useState(1);
-  const [loopsDraft, loopsDraftChange] = useNumberDraft(minLoops, minLoopsSet, {
-    min: 1,
-    max: MAX_EXPORT_LOOPS,
-  });
 
   const [exportProgress, exportProgressSet] = useState(null);
   const [exportError, exportErrorSet] = useState(null);
@@ -787,7 +731,7 @@ function DrosteApp() {
       <Space h={1} />
 
       <Tabs>
-        <Inline style={{ alignItems: 'center' }}>
+        <Inline>
           <Tab info>
             <Text>Speed:</Text>
           </Tab>
@@ -806,14 +750,13 @@ function DrosteApp() {
             <Inline wrap={false} style={{ alignItems: 'center' }}>
               <Space w={0.5} inline />
               <Input
-                type="number"
                 aria-label="Seconds per loop"
-                value={speedDraft}
-                onChange={(e) => speedDraftChange(e.target.value)}
+                value={cycleSeconds}
+                onValueChange={cycleSecondsSet}
                 step="0.5"
                 min={MIN_CYCLE_SECONDS}
                 max={MAX_CYCLE_SECONDS}
-                style={{ ...FIELD_STYLE, width: 72 }}
+                style={{ width: 72 }}
               />
               <Space w={0.5} inline />
               <Text>seconds per loop</Text>
@@ -825,7 +768,7 @@ function DrosteApp() {
       <Space h={1} />
 
       <Tabs>
-        <Inline style={{ alignItems: 'center' }}>
+        <Inline>
           <Tab info>
             <Text>Export size:</Text>
           </Tab>
@@ -854,14 +797,13 @@ function DrosteApp() {
             <Inline wrap={false} style={{ alignItems: 'center' }}>
               <Space w={0.5} inline />
               <Input
-                type="number"
                 aria-label="Longest side in pixels"
-                value={sizeDraft}
-                onChange={(e) => sizeDraftChange(e.target.value)}
+                value={longestSide}
+                onValueChange={longestSideSet}
                 step="10"
                 min={MIN_EXPORT_SIDE}
                 max={MAX_EXPORT_SIDE}
-                style={{ ...FIELD_STYLE, width: 82 }}
+                style={{ width: 82 }}
               />
               <Space w={0.5} inline />
               <Text>
@@ -878,7 +820,7 @@ function DrosteApp() {
           <Space h={1} />
 
           <Tabs>
-            <Inline style={{ alignItems: 'center' }}>
+            <Inline>
               <Tab info>
                 <Text>Export length:</Text>
               </Tab>
@@ -887,27 +829,25 @@ function DrosteApp() {
                   <Text>at least</Text>
                   <Space w={0.5} inline />
                   <Input
-                    type="number"
                     aria-label="Minimum length in seconds"
-                    value={secondsDraft}
-                    onChange={(e) => secondsDraftChange(e.target.value)}
+                    value={minSeconds}
+                    onValueChange={minSecondsSet}
                     step="1"
                     min={0}
                     max={MAX_EXPORT_SECONDS}
-                    style={{ ...FIELD_STYLE, width: 72 }}
+                    style={{ width: 72 }}
                   />
                   <Space w={0.5} inline />
                   <Text>seconds and</Text>
                   <Space w={0.5} inline />
                   <Input
-                    type="number"
                     aria-label="Minimum number of loops"
-                    value={loopsDraft}
-                    onChange={(e) => loopsDraftChange(e.target.value)}
+                    value={minLoops}
+                    onValueChange={minLoopsSet}
                     step="1"
                     min={1}
                     max={MAX_EXPORT_LOOPS}
-                    style={{ ...FIELD_STYLE, width: 62 }}
+                    style={{ width: 62 }}
                   />
                   <Space w={0.5} inline />
                   <Text>loops</Text>
@@ -929,7 +869,7 @@ function DrosteApp() {
       <Space h={1} />
 
       <Tabs>
-        <Inline style={{ alignItems: 'center' }}>
+        <Inline>
           <Tab info>
             <Text>Export as:</Text>
           </Tab>
@@ -956,7 +896,6 @@ function DrosteApp() {
               <Button
                 onClick={onExport}
                 disabled={exporting || !!rendererError}
-                style={{ ...FIELD_STYLE, boxShadow: 'none' }}
               >
                 {exporting
                   ? `Exporting… ${Math.round(exportProgress * 100)}%`

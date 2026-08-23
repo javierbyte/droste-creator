@@ -15,8 +15,8 @@ importers:
         specifier: ^1.0.3
         version: 1.0.3
       jbx:
-        specifier: ^2.13.0
-        version: 2.13.0(react@19.2.8)
+        specifier: ^2.14.0
+        version: 2.14.0(react@19.2.8)
       mediabunny:
         specifier: ^1.55.2
         version: 1.55.2
@@ -270,6 +270,9 @@ packages:
   '@types/dom-webcodecs@0.1.13':
     resolution: {integrity: sha512-O5hkiFIcjjszPIYyUSyvScyvrBoV3NOEEZx/pMlsu44TKzWNkLVBBxnxJz42in5n3QIolYOcBYFCPZZ0h8SkwQ==}
 
+  '@types/dom-webcodecs@0.1.19':
+    resolution: {integrity: sha512-+yFUIDUaASFz0vQpWBErPxun/Lb+F0TdrlTsj50gm7K797YzEx2TmV6fEiwciHyFNghlZYPgQXH5qRcwMHcJFQ==}
+
   baseline-browser-mapping@2.11.18:
     resolution: {integrity: sha512-1iEmLEYSiE1SeBoAfPo/Mnx3PzfzHUkDK61ASkCpuk3YXugYLH5DYK1SzqV55F8FMI6s0F+/tCP7Polz1QRjxw==}
     engines: {node: '>=6.0.0'}
@@ -292,8 +295,8 @@ packages:
   gifenc@1.0.3:
     resolution: {integrity: sha512-xdr6AdrfGBcfzncONUOlXMBuc5wJDtOueE3c5rdG0oNgtINLD+f2iFZltrBRZYzACRbKr+mSVU/x98zv2u3jmw==}
 
-  jbx@2.13.0:
-    resolution: {integrity: sha512-ejcQwI8ZQN5GoX6/5Jzz2dyIbhkWe8xUs4PNIdGEaA73+L0tT+j17eMh5qbN5JvMMXRao+e/LygNTr63FqRoIw==}
+  jbx@2.14.0:
+    resolution: {integrity: sha512-QFmsSCUQTqqLK27oM9lKimQocUMdioe4K1cAXhDWoBMcrVQrhRt6+lxWAPFAYAg/P+B79zn/zWLH7jzGGeyxig==}
     engines: {node: '>=18'}
     peerDependencies:
       react: ^17 || ^18 || ^19
@@ -558,9 +561,11 @@ snapshots:
 
   '@types/dom-mediacapture-transform@0.1.12':
     dependencies:
-      '@types/dom-webcodecs': 0.1.13
+      '@types/dom-webcodecs': 0.1.19
 
   '@types/dom-webcodecs@0.1.13': {}
+
+  '@types/dom-webcodecs@0.1.19': {}
 
   baseline-browser-mapping@2.11.18: {}
 
@@ -575,7 +580,7 @@ snapshots:
 
   gifenc@1.0.3: {}
 
-  jbx@2.13.0(react@19.2.8):
+  jbx@2.14.0(react@19.2.8):
     dependencies:
       react: 19.2.8
 
