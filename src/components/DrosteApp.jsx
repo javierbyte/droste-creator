@@ -52,6 +52,16 @@ const MAX_EXPORT_LOOPS = 20;
 
 const MAX_FRAME_SECONDS = 0.1;
 
+// jbx sizes inputs and buttons for standalone use, which makes the rows holding
+// one taller than the plain tab rows. Set inline: jbx/main.css is imported
+// after globals.css, so a stylesheet rule here would be relying on specificity.
+// The button also carries `boxShadow: 'none'`, because jbx draws its shadow
+// outside the box, making it paint taller than the inputs beside it.
+const FIELD_STYLE = {
+  flex: 'none',
+  height: 'calc(var(--size) * 1.5)',
+};
+
 function polar2cartesian({ distance, angle }) {
   return {
     x: distance * Math.cos(angle),
@@ -78,10 +88,17 @@ const EXPORT_FORMATS = {
 };
 
 const DRAW_MODES = {
+  handleDragRectangle: 'Rectangle',
   handleDrag: 'Free',
   handleDragMirror: 'Mirror',
   handleDragLockAspect: 'Aspect Lock',
 };
+
+// Corners are laid out 0 top left, 1 top right, 2 bottom left, 3 bottom right.
+// In rectangle mode a corner carries its neighbours with it: the one below or
+// above it keeps its x, the one beside it keeps its y.
+const SAME_COLUMN = [2, 3, 0, 1];
+const SAME_ROW = [1, 0, 3, 2];
 
 function getCounterPoint(id) {
   if (id === 0) return 3;
@@ -141,7 +158,9 @@ function exampleToPoints(example) {
   ];
 }
 
-async function resizeImage(base64Str, maxMass = 728 * 728) {
+// Only shrinks what is too big for a texture -- exports default to the source
+// image's own size, so throwing pixels away here would cap that default.
+async function resizeImage(base64Str, maxSide = MAX_EXPORT_SIDE) {
   return new Promise((resolve) => {
     let img = new Image();
     img.src = base64Str;
@@ -151,16 +170,10 @@ async function resizeImage(base64Str, maxMass = 728 * 728) {
       const originalWidth = img.width;
       const originalHeight = img.height;
 
-      let width = img.width;
-      let height = img.height;
+      const scale = Math.min(1, maxSide / Math.max(img.width, img.height));
 
-      while (width * height > maxMass) {
-        width = width / Math.sqrt(2, 2);
-        height = height / Math.sqrt(2, 2);
-      }
-
-      width = Math.round(width);
-      height = Math.round(height);
+      const width = Math.max(1, Math.round(img.width * scale));
+      const height = Math.max(1, Math.round(img.height * scale));
 
       canvas.width = width;
       canvas.height = height;
@@ -201,7 +214,7 @@ function DrosteApp() {
   const [sourceImage, sourceImageSet] = useState(EXAMPLES[DEFAULT_EXAMPLE_KEY]);
   const [currentExample, currentExampleSet] = useState(DEFAULT_EXAMPLE_KEY);
 
-  const [drawMode, drawModeSet] = useState('handleDrag');
+  const [drawMode, drawModeSet] = useState('handleDragRectangle');
   const [currentAnimation, currentAnimationSet] = useState(DEFAULT_ANIMATION);
 
   const [cycleSeconds, cycleSecondsSet] = useState(SPEED_PRESETS.Normal);
@@ -212,7 +225,9 @@ function DrosteApp() {
   );
 
   const [exportFormat, exportFormatSet] = useState('gif');
-  const [longestSide, longestSideSet] = useState(SIZE_PRESETS.Small);
+  // Null until the source image has loaded and reported its size.
+  const [naturalSide, naturalSideSet] = useState(null);
+  const [longestSide, longestSideSet] = useState(SIZE_PRESETS.Medium);
   const [sizeDraft, sizeDraftChange] = useNumberDraft(
     longestSide,
     longestSideSet,
@@ -282,6 +297,22 @@ function DrosteApp() {
     pointSet((oldPoints) => {
       const newPoints = [...oldPoints];
       newPoints[id] = { x: clamp01(x / width), y: clamp01(y / height) };
+      return newPoints;
+    });
+  }
+
+  function handleDragRectangle({ x, y }, id) {
+    pointSet((oldPoints) => {
+      const newPoints = [...oldPoints];
+      const point = { x: clamp01(x / width), y: clamp01(y / height) };
+
+      newPoints[id] = point;
+      newPoints[SAME_COLUMN[id]] = {
+        ...newPoints[SAME_COLUMN[id]],
+        x: point.x,
+      };
+      newPoints[SAME_ROW[id]] = { ...newPoints[SAME_ROW[id]], y: point.y };
+
       return newPoints;
     });
   }
@@ -383,6 +414,7 @@ function DrosteApp() {
   }
 
   const DRAW_MODE_FUNCTION = {
+    handleDragRectangle,
     handleDrag,
     handleDragMirror,
     handleDragLockAspect,
@@ -476,6 +508,17 @@ function DrosteApp() {
     image.onload = () => {
       if (cancelled) return;
       imageRef.current = image;
+
+      // Exports default to the image's own size, and follow it when the source
+      // changes -- the same way the corner handles reset to the new image.
+      const longest = Math.max(image.naturalWidth, image.naturalHeight);
+      const side = Math.min(
+        MAX_EXPORT_SIDE,
+        Math.max(MIN_EXPORT_SIDE, Math.round(longest))
+      );
+
+      naturalSideSet(side);
+      longestSideSet(side);
       imageVersionSet((version) => version + 1);
     };
     image.src = sourceImage.src;
@@ -668,7 +711,38 @@ function DrosteApp() {
         </Fragment>
       )}
 
-      <Space h={2} />
+      {currentExample !== null && (
+        <div className="examples">
+          {Object.keys(EXAMPLES).map((exampleKey) => (
+            <button
+              className={
+                currentExample === exampleKey ? 'example -active' : 'example'
+              }
+              key={exampleKey}
+              onClick={() => {
+                currentExampleSet(exampleKey);
+                sourceImageSet(EXAMPLES[exampleKey]);
+              }}
+            >
+              {exampleKey}
+            </button>
+          ))}
+        </div>
+      )}
+
+      <Space h={3} />
+
+      <Dropzone onDrop={onFileSelected}>
+        <Text>Click or drop your own image here</Text>
+        <input
+          type="file"
+          onChange={onFileSelected}
+          accept="image/*"
+          aria-label="Drop an image here, or click to select"
+        />
+      </Dropzone>
+
+      <Space h={1} />
 
       <Tabs>
         <Inline>
@@ -739,7 +813,7 @@ function DrosteApp() {
                 step="0.5"
                 min={MIN_CYCLE_SECONDS}
                 max={MAX_CYCLE_SECONDS}
-                style={{ flex: 'none', width: 72 }}
+                style={{ ...FIELD_STYLE, width: 72 }}
               />
               <Space w={0.5} inline />
               <Text>seconds per loop</Text>
@@ -751,32 +825,20 @@ function DrosteApp() {
       <Space h={1} />
 
       <Tabs>
-        <Inline>
-          <Tab info>
-            <Text>Examples:</Text>
-          </Tab>
-          {Object.keys(EXAMPLES).map((exampleKey) => (
-            <Tab
-              active={currentExample === exampleKey}
-              key={exampleKey}
-              onClick={() => {
-                currentExampleSet(exampleKey);
-                sourceImageSet(EXAMPLES[exampleKey]);
-              }}
-            >
-              <Text>{exampleKey}</Text>
-            </Tab>
-          ))}
-        </Inline>
-      </Tabs>
-
-      <Space h={2} />
-
-      <Tabs>
         <Inline style={{ alignItems: 'center' }}>
           <Tab info>
             <Text>Export size:</Text>
           </Tab>
+          {naturalSide && (
+            <Tab
+              active={longestSide === naturalSide}
+              onClick={() => {
+                longestSideSet(naturalSide);
+              }}
+            >
+              <Text>Original</Text>
+            </Tab>
+          )}
           {Object.keys(SIZE_PRESETS).map((sizeKey) => (
             <Tab
               active={longestSide === SIZE_PRESETS[sizeKey]}
@@ -799,7 +861,7 @@ function DrosteApp() {
                 step="10"
                 min={MIN_EXPORT_SIDE}
                 max={MAX_EXPORT_SIDE}
-                style={{ flex: 'none', width: 82 }}
+                style={{ ...FIELD_STYLE, width: 82 }}
               />
               <Space w={0.5} inline />
               <Text>
@@ -832,7 +894,7 @@ function DrosteApp() {
                     step="1"
                     min={0}
                     max={MAX_EXPORT_SECONDS}
-                    style={{ flex: 'none', width: 72 }}
+                    style={{ ...FIELD_STYLE, width: 72 }}
                   />
                   <Space w={0.5} inline />
                   <Text>seconds and</Text>
@@ -845,7 +907,7 @@ function DrosteApp() {
                     step="1"
                     min={1}
                     max={MAX_EXPORT_LOOPS}
-                    style={{ flex: 'none', width: 62 }}
+                    style={{ ...FIELD_STYLE, width: 62 }}
                   />
                   <Space w={0.5} inline />
                   <Text>loops</Text>
@@ -894,6 +956,7 @@ function DrosteApp() {
               <Button
                 onClick={onExport}
                 disabled={exporting || !!rendererError}
+                style={{ ...FIELD_STYLE, boxShadow: 'none' }}
               >
                 {exporting
                   ? `Exporting… ${Math.round(exportProgress * 100)}%`
@@ -919,18 +982,6 @@ function DrosteApp() {
           <Text>{exportError}</Text>
         </Fragment>
       )}
-
-      <Space h={2} />
-
-      <Dropzone onDrop={onFileSelected}>
-        <Text>Click or drop your own image here</Text>
-        <input
-          type="file"
-          onChange={onFileSelected}
-          accept="image/*"
-          aria-label="Drop an image here, or click to select"
-        />
-      </Dropzone>
     </Fragment>
   );
 }

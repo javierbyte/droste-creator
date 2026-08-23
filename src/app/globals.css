@@ -24,6 +24,41 @@
   top: 0;
 }
 
+/* The example picker sits directly under the stage, deliberately quieter than
+   the tab rows below it: it chooses the source image, it is not a setting. */
+.examples {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0 1rem;
+  margin: 0.5rem auto 0;
+}
+
+.example {
+  appearance: none;
+  border: none;
+  background: none;
+  padding: 0;
+  font: inherit;
+  font-size: 0.75rem;
+  line-height: 1.8;
+  color: #95a5a6;
+  cursor: pointer;
+  border-bottom: 1px solid transparent;
+}
+.example:hover {
+  color: #000;
+}
+.example.-active {
+  color: #000;
+  font-weight: 700;
+  border-bottom-color: #000;
+}
+.example:focus-visible {
+  outline: 2px solid var(--accent-color);
+  outline-offset: 2px;
+}
+
 .point {
   color: transparent;
   margin: -20px 0 0 -20px;

@@ -21,8 +21,10 @@ export const VIDEO_FPS = 30;
 const PALETTE_SAMPLE_PIXELS = 262144;
 
 // The encoder is drained this often so its queue of raw frames stays bounded.
-const FLUSH_EVERY_FRAMES = 30;
-const ENCODER_STALL_SECONDS = 60;
+// Safari wedges its encoder once a few dozen raw frames are queued behind it,
+// but handles one frame at a time fine, so every frame is drained as it goes.
+const FLUSH_EVERY_FRAMES = 1;
+const ENCODER_STALL_SECONDS = 15;
 // The first frame is drained on its own: if the encoder is going to wedge, it
 // does so here, cheaply, and we can switch to recording instead.
 const ENCODER_PROBE_SECONDS = 6;
@@ -342,7 +344,8 @@ async function encodeWithWebCodecs({
         videoFrame.close();
       }
 
-      // Frame 0 doubles as the probe.
+      // Frame 0 is drained on its own, so an encoder that will never drain is
+      // caught in a second rather than after the whole clip has been fed in.
       const isProbe = idx === 0;
       if (isProbe || idx % flushEvery === flushEvery - 1) {
         try {
@@ -352,7 +355,9 @@ async function encodeWithWebCodecs({
             isProbe ? ENCODER_PROBE_SECONDS : ENCODER_STALL_SECONDS
           );
         } catch (error) {
-          throw isProbe ? encoderUnusable(error.message) : error;
+          // Whenever it happens, a stall means this browser's encoder cannot
+          // finish the job, so hand the whole export over to the recorder.
+          throw encoderUnusable(error.message);
         }
       }
 
@@ -360,15 +365,19 @@ async function encodeWithWebCodecs({
       if (idx % 4 === 3) await yieldToBrowser();
     }
 
-    await withTimeout(
-      encoder.flush(),
-      'The video encoder stopped responding while finishing.'
-    );
+    try {
+      await withTimeout(
+        encoder.flush(),
+        'The video encoder stopped responding while finishing.'
+      );
+    } catch (error) {
+      throw encoderUnusable(error.message);
+    }
   } finally {
     if (encoder.state !== 'closed') encoder.close();
   }
 
-  if (encoderError) throw new Error(encoderError.message);
+  if (encoderError) throw encoderUnusable(encoderError.message);
   if (!encoded.length) throw encoderUnusable('The encoder produced no frames.');
 
   for (let idx = 0; idx < encoded.length; idx++) {
