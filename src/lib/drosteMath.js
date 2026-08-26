@@ -153,10 +153,60 @@ export function computeTransforms({
   return transforms;
 }
 
+// How the animation moves from one droste step to the next.
+//
+// 'EASED' is the plain blend of the transform matrices below. The matrix
+// entries move at a constant rate, but zoom is multiplicative, so the speed the
+// eye reads -- how fast the frame doubles, not how fast the numbers change --
+// starts high and tails off towards the end of every step. That is the original
+// look, so it stays the default.
+//
+// 'LINEAR' holds that perceived rate constant instead, for an animation that
+// zooms continuously and never pulses at the seam between steps.
+export const ZOOM_EASINGS = {
+  EASED: 'Eased',
+  LINEAR: 'Linear',
+};
+
+export const DEFAULT_ZOOM_EASING = 'EASED';
+
+// How much bigger one step of `sixteen` makes the frame. 1 means no zoom, and
+// is also the answer for anything degenerate, which leaves the easing below as
+// a no-op rather than as a division by zero.
+export function transformZoom(sixteen, width, height) {
+  const base = Math.max(width, height);
+  if (!(base > 0)) return 1;
+
+  const zoom = layerLongestSide(sixteen, width, height) / base;
+
+  return Number.isFinite(zoom) && zoom > 0 ? zoom : 1;
+}
+
+// Progress remapped so that the linear blend below reads as a constant zoom.
+//
+// Blending grows the scale linearly, `s(u) = 1 + u (zoom - 1)`, while a
+// constant zoom rate needs it to grow geometrically, `s(t) = zoom ** t`.
+// Solving one for the other gives this remap. It is exact when the droste step
+// is a pure scale, and close enough once rotation or perspective are in play.
+//
+// `u(0)` is 0 and `u(1)` is 1, so both ends of the cycle land on exactly the
+// same matrices as before and the loop still closes seamlessly.
+function linearZoomProgress(progress, zoom) {
+  return (Math.pow(zoom, progress) - 1) / (zoom - 1);
+}
+
 // The animated matrix, walking from identity (progress 0) to the inverse of the
 // droste step (progress 1).
-export function interpolateTransform(invertedTransform, progress) {
+//
+// Pass the `transformZoom` of that inverse to get there at a constant zoom
+// rate; pass nothing to keep the original easing.
+export function interpolateTransform(invertedTransform, progress, zoom = null) {
+  const eased =
+    zoom !== null && Math.abs(zoom - 1) > 1e-6
+      ? linearZoomProgress(progress, zoom)
+      : progress;
+
   return invertedTransform.map(
-    (el, elIdx) => el * progress + NULL_TRANSFORM[elIdx] * (1 - progress)
+    (el, elIdx) => el * eased + NULL_TRANSFORM[elIdx] * (1 - eased)
   );
 }

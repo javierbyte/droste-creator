@@ -9,6 +9,8 @@ import invertMatrix from '@/lib/invertMatrix.js';
 import {
   computeTransforms,
   interpolateTransform,
+  transformZoom,
+  DEFAULT_ZOOM_EASING,
   EXPORT_DEPTH,
 } from '@/lib/drosteMath.js';
 import { createDrosteRenderer } from '@/lib/drosteRender.js';
@@ -139,7 +141,14 @@ async function pickCodec(width, height) {
 }
 
 // Everything needed to draw one frame at export resolution.
-function createFrameRenderer({ image, points, width, height, background }) {
+function createFrameRenderer({
+  image,
+  points,
+  width,
+  height,
+  background,
+  zoomEasing = DEFAULT_ZOOM_EASING,
+}) {
   const canvas = document.createElement('canvas');
   const renderer = createDrosteRenderer(canvas, {
     preserveDrawingBuffer: true,
@@ -167,6 +176,11 @@ function createFrameRenderer({ image, points, width, height, background }) {
   );
 
   const invertedTransform = invertMatrix(cssTransform).flat();
+  // Measured at export resolution, so it matches what the preview was showing.
+  const zoom =
+    zoomEasing === 'LINEAR'
+      ? transformZoom(invertedTransform, width, height)
+      : null;
   const transforms = computeTransforms({
     cssTransform,
     width,
@@ -180,7 +194,7 @@ function createFrameRenderer({ image, points, width, height, background }) {
     drawProgress(progress) {
       renderer.draw({
         transforms,
-        animated: interpolateTransform(invertedTransform, progress),
+        animated: interpolateTransform(invertedTransform, progress, zoom),
         width,
         height,
         background,
@@ -533,6 +547,7 @@ export async function exportDroste({
   longestSide,
   cycleSeconds,
   direction,
+  zoomEasing,
   minSeconds,
   minLoops,
   background,
@@ -545,6 +560,7 @@ export async function exportDroste({
     width,
     height,
     background,
+    zoomEasing,
   });
 
   try {

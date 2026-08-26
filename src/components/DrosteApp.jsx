@@ -15,7 +15,13 @@ import Draggable from 'react-draggable';
 import transform2d from '@/lib/4point.js';
 import invertMatrix from '@/lib/invertMatrix.js';
 import { BASE_PATH } from '@/lib/basePath.js';
-import { computeTransforms, interpolateTransform } from '@/lib/drosteMath.js';
+import {
+  computeTransforms,
+  interpolateTransform,
+  transformZoom,
+  ZOOM_EASINGS,
+  DEFAULT_ZOOM_EASING,
+} from '@/lib/drosteMath.js';
 import { createDrosteRenderer } from '@/lib/drosteRender.js';
 import {
   exportDroste,
@@ -180,6 +186,7 @@ function DrosteApp() {
 
   const [drawMode, drawModeSet] = useState('handleDragRectangle');
   const [currentAnimation, currentAnimationSet] = useState(DEFAULT_ANIMATION);
+  const [zoomEasing, zoomEasingSet] = useState(DEFAULT_ZOOM_EASING);
 
   const [cycleSeconds, cycleSecondsSet] = useState(SPEED_PRESETS.Normal);
 
@@ -499,6 +506,10 @@ function DrosteApp() {
     drawStateRef.current = {
       transforms: imageTransformArray,
       invertedTransform: invertedTransformArray,
+      zoom:
+        zoomEasing === 'LINEAR'
+          ? transformZoom(invertedTransformArray, width, height)
+          : null,
       width,
       height,
     };
@@ -536,7 +547,8 @@ function DrosteApp() {
           transforms: drawState.transforms,
           animated: interpolateTransform(
             drawState.invertedTransform,
-            progressRef.current
+            progressRef.current,
+            drawState.zoom
           ),
           width: drawState.width,
           height: drawState.height,
@@ -584,6 +596,7 @@ function DrosteApp() {
         longestSide,
         cycleSeconds,
         direction: currentAnimation,
+        zoomEasing,
         minSeconds,
         minLoops,
         background: STAGE_BACKGROUND,
@@ -723,6 +736,27 @@ function DrosteApp() {
               }}
             >
               <Text>{DEFAULT_ANIMATIONS[animationKey]}</Text>
+            </Tab>
+          ))}
+        </Inline>
+      </Tabs>
+
+      <Space h={1} />
+
+      <Tabs>
+        <Inline>
+          <Tab info>
+            <Text>Zoom:</Text>
+          </Tab>
+          {Object.keys(ZOOM_EASINGS).map((easingKey) => (
+            <Tab
+              active={zoomEasing === easingKey}
+              key={easingKey}
+              onClick={() => {
+                zoomEasingSet(easingKey);
+              }}
+            >
+              <Text>{ZOOM_EASINGS[easingKey]}</Text>
             </Tab>
           ))}
         </Inline>
