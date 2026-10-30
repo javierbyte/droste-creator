@@ -2,3 +2,4 @@ allowBuilds:
   esbuild: true
 minimumReleaseAgeExclude:
   - jbx
+  - mediabunny@1.64.0

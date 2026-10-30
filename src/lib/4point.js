@@ -1,5 +1,3 @@
-/* eslint-disable */
-
 // https://math.stackexchange.com/questions/296794/finding-the-transform-matrix-from-4-projected-points-with-javascript
 
 function adj(m) {

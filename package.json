@@ -3,7 +3,7 @@
   "description": "Create recursive images with the droste effect.",
   "version": "2.0.0",
   "type": "module",
-  "packageManager": "pnpm@11.21.0",
+  "packageManager": "pnpm@12.16.1",
   "scripts": {
     "dev": "echo 'Local:         http://localhost:3002/droste-creator' && next dev -p 3002",
     "build": "next build",
@@ -21,19 +21,19 @@
     "experiments",
     "react"
   ],
-  "author": "Javier Bórquez <hi@javier.xyz> (http://github.com/javierbyte)",
+  "author": "Javier B\u00f3rquez <hi@javier.xyz> (http://github.com/javierbyte)",
   "license": "BSD-3-Clause",
   "bugs": {
     "url": "https://github.com/javierbyte/droste-creator/issues"
   },
   "dependencies": {
-    "@next/third-parties": "^16.3.2",
+    "@next/third-parties": "^16.4.3",
     "gifenc": "^1.0.3",
-    "jbx": "^2.15.0",
-    "mediabunny": "^1.55.2",
-    "next": "^16.3.2",
-    "react": "^19.2.8",
-    "react-dom": "^19.2.8",
-    "react-draggable": "^4.7.1"
+    "jbx": "^2.16.1",
+    "mediabunny": "^1.64.0",
+    "next": "^16.4.3",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
+    "react-draggable": "^4.7.2"
   }
 }
